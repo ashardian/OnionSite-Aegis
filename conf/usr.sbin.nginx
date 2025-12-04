@@ -1,0 +1,31 @@
+#include <tunables/global>
+
+/usr/sbin/nginx {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/nis>
+  #include <abstractions/openssl>
+
+  # Capability needed to bind to ports and setuid
+  capability net_bind_service,
+  capability setgid,
+  capability setuid,
+
+  # Deny everything by default
+  deny / w,
+  
+  # Allow reading config
+  /etc/nginx/** r,
+  /usr/share/nginx/** r,
+  
+  # Allow reading webroot
+  /var/www/onion_site/** r,
+  
+  # Allow writing only to RAM logs (Aegis Specific)
+  /mnt/ram_logs/nginx/* w,
+  
+  # Deny executing shells (Critical)
+  deny /bin/bash x,
+  deny /bin/sh x,
+  deny /usr/bin/** x,
+}
