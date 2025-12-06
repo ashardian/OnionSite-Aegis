@@ -1,6 +1,25 @@
 # 🛡️ OnionSite-Aegis (Privacy-Focused Edition)
 **v5.0 | Military-Grade Tor Hidden Service Orchestrator with Enhanced Privacy**
 
+## 🐳 Docker Deployment (Recommended)
+
+For enhanced security and isolation, **Docker deployment is recommended**. See [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) for complete guide.
+
+**Quick Start:**
+```bash
+mkdir -p data/tor-keys webroot
+echo "<h1>My Site</h1>" > webroot/index.html
+docker-compose up -d
+docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
+```
+
+**Benefits:**
+- ✅ Container isolation from host system
+- ✅ Enhanced security (seccomp, capabilities, AppArmor)
+- ✅ Resource limits prevent DoS
+- ✅ Easy deployment and updates
+- ✅ Network isolation
+
 ## ⚠️ WARNING: HIGH SECURITY & PRIVACY MODE
 This tool applies **aggressive system hardening and privacy protection**. It is designed for dedicated servers or fresh VMs (Debian 11+/Parrot OS).
 - It **disables IPv6** system-wide.
@@ -25,11 +44,17 @@ A Python-based daemon (`neural_sentry.py`) that acts as a localized IDS with pri
 - **Enhanced Error Handling:** Automatic reconnection, graceful shutdown, and health monitoring.
 
 ### 3. Enhanced Privacy & Security Hardening
-- **NFTables Bunker:** Whitelist-only firewall. Blocks everything except Loopback (internal) and established connections. SSH is optional.
+- **Enhanced NFTables Firewall:** 
+  - DDoS protection (SYN flood, connection rate limiting)
+  - Per-IP connection limits (max 5 connections/minute)
+  - ICMP restrictions
+  - Comprehensive logging
+  - Host-level firewall script for Docker deployments
 - **Tor Sandbox:** Runs Tor with `Sandbox 1`, preventing the process from making unauthorized syscalls.
 - **Enhanced Tor Privacy:** Connection padding, circuit padding, guard node optimization, and reduced connection metadata.
 - **Nginx Privacy Headers:** Anti-fingerprinting headers, rate limiting, and request sanitization.
 - **Kernel Hardening:** Extended sysctl settings for network privacy and exploit prevention.
+- **Docker Security:** Seccomp profiles, minimal capabilities, AppArmor, resource limits, network isolation.
 
 ### 4. Privacy Monitor (New)
 Automated privacy compliance checker that runs every 6 hours:

@@ -1,0 +1,185 @@
+#!/bin/bash
+# Docker Entrypoint for OnionSite-Aegis
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+log() {
+    echo -e "${CYAN}[AEGIS]${NC} $1"
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+# Function to setup RAM logging
+setup_ram_logs() {
+    log "Setting up RAM-based logging..."
+    mkdir -p /mnt/ram_logs/nginx /mnt/ram_logs/tor
+    chown -R www-data:www-data /mnt/ram_logs/nginx
+    chown -R debian-tor:debian-tor /mnt/ram_logs/tor
+    chmod 750 /mnt/ram_logs/nginx
+    chmod 700 /mnt/ram_logs/tor
+    
+    # Link logs to RAM
+    rm -rf /var/log/nginx /var/log/tor
+    ln -sf /mnt/ram_logs/nginx /var/log/nginx
+    ln -sf /mnt/ram_logs/tor /var/log/tor
+}
+
+# Function to configure Tor
+configure_tor() {
+    log "Configuring Tor..."
+    CORES=$(nproc)
+    
+    cat > /etc/tor/torrc <<EOF
+DataDirectory /var/lib/tor
+PidFile /run/tor/tor.pid
+RunAsDaemon 0
+User debian-tor
+
+# Control Port for Neural Sentry
+ControlPort 127.0.0.1:9051
+CookieAuthentication 1
+
+# Hidden Service
+HiddenServiceDir /var/lib/tor/hidden_service/
+HiddenServiceVersion 3
+HiddenServicePort 80 127.0.0.1:8080
+
+# Privacy & Security Hardening
+Sandbox 1
+NoExec 1
+HardwareAccel 1
+SafeLogging 1
+AvoidDiskWrites 1
+NumCPUs $CORES
+
+# Enhanced Privacy Settings
+DisableDebuggerAttachment 1
+SafeSocks 1
+WarnUnsafeSocks 0
+TestSocks 1
+CircuitBuildTimeout 10
+KeepalivePeriod 60
+NewCircuitPeriod 30
+MaxCircuitDirtiness 600
+MaxClientCircuitsPending 32
+
+# Connection Privacy
+ConnectionPadding 1
+ReducedConnectionPadding 0
+CircuitPadding 1
+
+# Guard Node Privacy
+UseEntryGuards 1
+NumEntryGuards 3
+GuardLifetime 30 days
+NumDirectoryGuards 3
+
+# Exit Node Restrictions
+ExitNodes {}
+ExcludeNodes {}
+StrictNodes 0
+
+# Logging Privacy (minimal)
+Log notice file /mnt/ram_logs/tor/tor.log
+EOF
+
+    chown -R debian-tor:debian-tor /var/lib/tor
+    chmod 700 /var/lib/tor/hidden_service
+}
+
+# Function to deploy WAF
+deploy_waf() {
+    log "Deploying Web Application Firewall..."
+    
+    # Download OWASP CRS if not present
+    if [ ! -d "/usr/share/modsecurity-crs" ]; then
+        git clone --depth 1 https://github.com/coreruleset/coreruleset /usr/share/modsecurity-crs
+        mv /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf
+    fi
+    
+    # Configure ModSecurity
+    mkdir -p /etc/nginx/modsec
+    cat > /etc/nginx/modsec/main.conf <<EOF
+Include /etc/nginx/modsec/modsecurity.conf
+Include /usr/share/modsecurity-crs/crs-setup.conf
+Include /usr/share/modsecurity-crs/rules/*.conf
+EOF
+
+    # Download default config if not present
+    if [ ! -f "/etc/nginx/modsec/modsecurity.conf" ]; then
+        curl -sSL https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended \
+            -o /etc/nginx/modsec/modsecurity.conf
+        sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/nginx/modsec/modsecurity.conf
+    fi
+}
+
+# Function to setup firewall (if nftables available)
+setup_firewall() {
+    if command -v nft >/dev/null 2>&1; then
+        log "Setting up NFTables firewall..."
+        # Firewall rules are applied at host level or via docker network policies
+        # Container-level firewall is limited, but we can set it up
+        if [ -f "/etc/nftables.conf" ]; then
+            nft -f /etc/nftables.conf || true
+        fi
+    fi
+}
+
+# Function to start services
+start_services() {
+    log "Starting services..."
+    
+    # Start Tor
+    log "Starting Tor..."
+    tor -f /etc/tor/torrc &
+    TOR_PID=$!
+    
+    # Wait for Tor to be ready
+    sleep 5
+    
+    # Start Neural Sentry
+    log "Starting Neural Sentry..."
+    python3 /usr/local/bin/neural_sentry.py &
+    SENTRY_PID=$!
+    
+    # Start Nginx
+    log "Starting Nginx..."
+    nginx -g "daemon off;" &
+    NGINX_PID=$!
+    
+    # Wait for all processes
+    wait $TOR_PID $SENTRY_PID $NGINX_PID
+}
+
+# Main execution
+case "${1:-aegis}" in
+    aegis)
+        log "Starting OnionSite-Aegis v5.0 (Docker)"
+        
+        # Setup
+        setup_ram_logs
+        configure_tor
+        deploy_waf
+        setup_firewall
+        
+        # Apply sysctl settings (if possible in container)
+        sysctl -p /etc/sysctl.d/99-aegis.conf 2>/dev/null || true
+        
+        # Start services
+        start_services
+        ;;
+    shell)
+        exec /bin/bash
+        ;;
+    *)
+        exec "$@"
+        ;;
+esac
+
