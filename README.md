@@ -19,7 +19,7 @@
 
 ## 🐳 Docker Deployment (Recommended)
 
-For enhanced security and isolation, **Docker deployment is recommended**. See [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) for complete guide.
+For enhanced security and isolation, **Docker deployment is recommended**. See [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) for complete guide.
 
 **Quick Start:**
 ```bash
@@ -102,7 +102,7 @@ Automated privacy compliance checker that runs every 6 hours:
 
 **Result:** Practically impossible to track or correlate users based on Onion address alone.
 
-See [ANTI_TRACKING_GUIDE.md](ANTI_TRACKING_GUIDE.md) for complete details.
+See [Anti-Tracking Guide](docs/ANTI_TRACKING_GUIDE.md) for complete details.
 
 ### 7. Enhanced Firewall (NFTables) 🔥
 **Advanced DDoS protection and rate limiting:**
@@ -184,7 +184,7 @@ All files have been verified for:
 
 **Verification Tools:**
 - Run `./verify_stability.sh` to verify installation anytime
-- See [VERIFICATION_REPORT.md](VERIFICATION_REPORT.md) for detailed results
+- See [Verification Report](docs/VERIFICATION_REPORT.md) for detailed results
 
 **Test Results:**
 - Bash Scripts: 10/10 ✅
@@ -211,13 +211,16 @@ rm -rf data/ webroot/
 
 ## 📚 Documentation
 
-- **[DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md)** - Complete Docker deployment guide
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick start for both methods
-- **[ANTI_TRACKING_GUIDE.md](ANTI_TRACKING_GUIDE.md)** - Comprehensive anti-tracking guide
-- **[ANTI_TRACKING_SUMMARY.md](ANTI_TRACKING_SUMMARY.md)** - Quick anti-tracking reference
-- **[PRIVACY_IMPROVEMENTS.md](PRIVACY_IMPROVEMENTS.md)** - Privacy improvements details
-- **[IMPROVEMENTS_SUMMARY.md](IMPROVEMENTS_SUMMARY.md)** - All improvements summary
-- **[VERIFICATION_REPORT.md](VERIFICATION_REPORT.md)** - Verification and stability report
+All documentation is available in the [`docs/`](docs/) directory:
+
+- **[Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md)** - Complete Docker deployment guide
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Quick start for both methods
+- **[Anti-Tracking Guide](docs/ANTI_TRACKING_GUIDE.md)** - Comprehensive anti-tracking guide
+- **[Anti-Tracking Summary](docs/ANTI_TRACKING_SUMMARY.md)** - Quick anti-tracking reference
+- **[Privacy Improvements](docs/PRIVACY_IMPROVEMENTS.md)** - Privacy improvements details
+- **[Improvements Summary](docs/IMPROVEMENTS_SUMMARY.md)** - All improvements summary
+- **[Verification Report](docs/VERIFICATION_REPORT.md)** - Verification and stability report
+- **[GitHub Description](docs/GITHUB_DESCRIPTION.md)** - GitHub repository descriptions and tags
 
 ## 🔧 Maintenance
 
@@ -345,7 +348,7 @@ When using, redistributing, or showcasing OnionSite-Aegis, you must:
 - Give credit/attribution to the author
 - Mention/shoutout the author in documentation, videos, tutorials, etc.
 
-See [ATTRIBUTION.md](ATTRIBUTION.md) for detailed attribution guidelines.
+See [Attribution Guidelines](docs/ATTRIBUTION.md) for detailed attribution guidelines.
 
 ## 🙏 Acknowledgments
 
