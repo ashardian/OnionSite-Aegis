@@ -25,7 +25,7 @@ COPY, MODIFY, OR DISTRIBUTE THE SOFTWARE.
    Subject to the terms and conditions of this License, You are hereby granted a 
    non-exclusive, non-transferable, limited license to:
 
-   a) USE the Software for personal or commercial purposes;
+   a) USE the Software for personal purposes;
    b) REDISTRIBUTE the Software in its original, unmodified form;
    c) SHOWCASE or demonstrate the Software in presentations, tutorials, or 
       educational materials.
@@ -65,10 +65,10 @@ COPY, MODIFY, OR DISTRIBUTE THE SOFTWARE.
    c) Maintain all attribution and copyright notices in their original form.
 
    Examples of acceptable attribution:
-   - "Powered by OnionSite-Aegis by [Author Name]"
-   - "Built using OnionSite-Aegis - https://github.com/[repo]"
-   - "Shoutout to [Author Name] for creating OnionSite-Aegis"
-   - "This project uses OnionSite-Aegis - credit to [Author Name]"
+   - "Powered by OnionSite-Aegis by Ashar Dian"
+   - "Built using OnionSite-Aegis - https://github.com/ashardian/OnionSite-Aegis.git"
+   - "Shoutout to Ashar Dian for creating OnionSite-Aegis"
+   - "This project uses OnionSite-Aegis - credit to Ashar Dian"
 
 5. NO WARRANTY AND DISCLAIMER OF LIABILITY
 
