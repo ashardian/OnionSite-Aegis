@@ -330,7 +330,22 @@ This is a privacy-focused project. Contributions that enhance privacy and securi
 
 ## 📄 License
 
-See LICENSE file for details.
+**Custom License - See [LICENSE](LICENSE) file for full terms.**
+
+**Quick Summary:**
+- ✅ You may use and redistribute (unmodified)
+- ✅ You may showcase and demonstrate
+- ❌ You may NOT modify or create derivatives
+- ❌ You may NOT sell or commercially exploit
+- 📢 You MUST give attribution/shoutout to the author
+
+**Attribution Requirements:**
+When using, redistributing, or showcasing OnionSite-Aegis, you must:
+- Include copyright notices
+- Give credit/attribution to the author
+- Mention/shoutout the author in documentation, videos, tutorials, etc.
+
+See [ATTRIBUTION.md](ATTRIBUTION.md) for detailed attribution guidelines.
 
 ## 🙏 Acknowledgments
 

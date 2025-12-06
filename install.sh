@@ -1,6 +1,11 @@
 #!/bin/bash
 # OnionSite-Aegis Installer
 # Target: Debian/Parrot
+#
+# Copyright (c) 2026 OnionSite-Aegis
+# See LICENSE file for terms and conditions.
+# Note: Author is not responsible for illegal use of this software.
+#
 set -e
 
 # Colors

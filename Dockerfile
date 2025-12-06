@@ -1,5 +1,10 @@
 # OnionSite-Aegis Docker Container
 # Privacy-Focused Tor Hidden Service with Enhanced Security
+#
+# Copyright (c) 2026 OnionSite-Aegis
+# See LICENSE file for terms and conditions.
+# Note: Author is not responsible for illegal use of this software.
+#
 FROM debian:bookworm-slim
 
 LABEL maintainer="OnionSite-Aegis"

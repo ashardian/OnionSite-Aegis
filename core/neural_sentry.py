@@ -2,6 +2,10 @@
 """
 Neural Sentry - Privacy-Focused Active Defense System
 Monitors Tor circuits, file integrity, and privacy threats
+
+Copyright (c) 2026 OnionSite-Aegis
+See LICENSE file for terms and conditions.
+Note: Author is not responsible for illegal use of this software.
 """
 import time
 import os
