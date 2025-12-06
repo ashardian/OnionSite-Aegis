@@ -70,24 +70,36 @@ NewCircuitPeriod 30
 MaxCircuitDirtiness 600
 MaxClientCircuitsPending 32
 
-# Connection Privacy
+# Connection Privacy (Maximum)
 ConnectionPadding 1
 ReducedConnectionPadding 0
 CircuitPadding 1
+PaddingDistribution piatkowski  # Advanced padding distribution
 
-# Guard Node Privacy
+# Guard Node Privacy (Enhanced)
 UseEntryGuards 1
 NumEntryGuards 3
 GuardLifetime 30 days
 NumDirectoryGuards 3
+EntryNodes {}  # Use any entry node (prevents selection bias)
+StrictEntryNodes 0
 
 # Exit Node Restrictions
 ExitNodes {}
 ExcludeNodes {}
 StrictNodes 0
 
+# Additional Privacy Settings
+PublishServerDescriptor 0
+ClientOnly 1  # Only act as client, not relay
+FetchDirInfoEarly 0
+FetchUselessDescriptors 0
+LearnCircuitBuildTimeout 0  # Don't learn optimal timeouts (prevents fingerprinting)
+
 # Logging Privacy (minimal)
 Log notice file /mnt/ram_logs/tor/tor.log
+SafeLogging 1
+AvoidDiskWrites 1
 EOF
 
     chown -R debian-tor:debian-tor /var/lib/tor
@@ -165,9 +177,15 @@ case "${1:-aegis}" in
         
         # Setup
         setup_ram_logs
-        configure_tor
-        deploy_waf
-        setup_firewall
+    configure_tor
+    deploy_waf
+    setup_firewall
+    
+    # Setup traffic analysis protection
+    if [ -f "/usr/local/bin/traffic_analysis_protection.sh" ]; then
+        log "Setting up traffic analysis protection..."
+        /usr/local/bin/traffic_analysis_protection.sh || true
+    fi
         
         # Apply sysctl settings (if possible in container)
         sysctl -p /etc/sysctl.d/99-aegis.conf 2>/dev/null || true

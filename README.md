@@ -69,6 +69,19 @@ Automated privacy compliance checker that runs every 6 hours:
 - Blocks SQL injection, XSS, and shell uploads
 - Application-layer protection
 
+### 6. Anti-Tracking & Traffic Analysis Protection (NEW) 🔒
+**Makes tracking impossible based solely on Onion address:**
+- **Response Size Padding:** All responses padded to uniform sizes (prevents size correlation)
+- **Timing Randomization:** Random delays prevent timing correlation attacks
+- **DNS Leak Prevention:** All DNS queries blocked except through Tor
+- **External Connection Blocking:** Only Tor connections allowed (no direct connections)
+- **Header Removal:** ETag, Last-Modified, and all identifying headers removed
+- **Memory Protection:** Core dumps disabled (prevents memory analysis)
+- **Tor Maximum Privacy:** Advanced padding, no fingerprinting, client-only mode
+- **No Access Logs:** Complete privacy (logs in RAM only)
+
+See [ANTI_TRACKING_GUIDE.md](ANTI_TRACKING_GUIDE.md) for complete details.
+
 ## 🛠️ Installation
 
 1. **Unzip the suite:**

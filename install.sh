@@ -127,25 +127,47 @@ NewCircuitPeriod 30
 MaxCircuitDirtiness 600
 MaxClientCircuitsPending 32
 
-# Connection Privacy
+# Connection Privacy (Maximum)
 ConnectionPadding 1
 ReducedConnectionPadding 0
 CircuitPadding 1
+PaddingDistribution piatkowski  # Advanced padding distribution
 
-# Guard Node Privacy
+# Guard Node Privacy (Enhanced)
 UseEntryGuards 1
 NumEntryGuards 3
 GuardLifetime 30 days
 NumDirectoryGuards 3
+EntryNodes {}  # Use any entry node (prevents selection bias)
+StrictEntryNodes 0
 
 # Exit Node Restrictions (if relaying)
 ExitNodes {}
 ExcludeNodes {}
 StrictNodes 0
 
-# Logging Privacy (minimal)
+# Additional Privacy Settings
+# Don't publish server descriptor (if not relaying)
+PublishServerDescriptor 0
+
+# Reduce directory information
+DirPort auto
+ORPort auto
+
+# Prevent fingerprinting
+ClientOnly 1  # Only act as client, not relay
+
+# Prevent correlation through directory requests
+FetchDirInfoEarly 0
+FetchUselessDescriptors 0
+
+# Connection timing randomization
+LearnCircuitBuildTimeout 0  # Don't learn optimal timeouts (prevents fingerprinting)
+
+# Logging Privacy (minimal - no identifying info)
 Log notice file /mnt/ram_logs/tor/tor.log
-Log notice syslog
+SafeLogging 1
+AvoidDiskWrites 1
 EOF
 
 mkdir -p /var/lib/tor/hidden_service
@@ -215,6 +237,12 @@ chmod +x /usr/local/bin/privacy_log_sanitizer.py
 # Install Privacy Monitor
 cp core/privacy_monitor.sh /usr/local/bin/
 chmod +x /usr/local/bin/privacy_monitor.sh
+
+# Install Traffic Analysis Protection
+echo -e "${GREEN}[*] Installing Traffic Analysis Protection...${NC}"
+cp core/traffic_analysis_protection.sh /usr/local/bin/
+chmod +x /usr/local/bin/traffic_analysis_protection.sh
+/usr/local/bin/traffic_analysis_protection.sh
 
 # Setup Privacy Monitor Timer (runs every 6 hours)
 cat > /etc/systemd/system/privacy-monitor.timer <<EOF

@@ -55,6 +55,7 @@ RUN mkdir -p /mnt/ram_logs/nginx /mnt/ram_logs/tor && \
 RUN cp /tmp/core/neural_sentry.py /usr/local/bin/ && \
     cp /tmp/core/privacy_log_sanitizer.py /usr/local/bin/ && \
     cp /tmp/core/privacy_monitor.sh /usr/local/bin/ && \
+    cp /tmp/core/traffic_analysis_protection.sh /usr/local/bin/ && \
     cp /tmp/core/init_ram_logs.sh /usr/local/bin/ && \
     cp /tmp/core/waf_deploy.sh /usr/local/bin/ && \
     chmod +x /usr/local/bin/*.py /usr/local/bin/*.sh
