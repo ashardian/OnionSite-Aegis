@@ -11,13 +11,37 @@ NC='\033[0m'
 
 if [ "$EUID" -ne 0 ]; then echo -e "${RED}Please run as root.${NC}"; exit 1; fi
 
-echo -e "${CYAN}[+] Starting AEGIS Deployment (Insane Mode)...${NC}"
+# Privacy Check: Verify we're on a dedicated system
+echo -e "${CYAN}[+] Privacy & Security Pre-Flight Checks...${NC}"
+if [ -f /etc/passwd ] && [ "$(wc -l < /etc/passwd)" -gt 10 ]; then
+    echo -e "${RED}[!] WARNING: Multiple user accounts detected. This tool is designed for dedicated servers.${NC}"
+    read -p "Continue anyway? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# Check for existing Tor services
+if systemctl is-active --quiet tor 2>/dev/null; then
+    echo -e "${RED}[!] WARNING: Tor service is already running.${NC}"
+    read -p "Stop and reconfigure? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        systemctl stop tor
+    else
+        echo -e "${RED}Aborting installation.${NC}"
+        exit 1
+    fi
+fi
+
+echo -e "${CYAN}[+] Starting AEGIS Deployment (Privacy-Focused Mode)...${NC}"
 
 # 1. Install Dependencies
 echo -e "${GREEN}[*] Installing dependencies...${NC}"
 apt-get update -qq
-DEBIAN_FRONTEND=noninteractive apt-get install -y tor nginx nftables python3-pip python3-stem tor-geoipdb nginx-extras unzip
-pip3 install stem --break-system-packages 2>/dev/null || pip3 install stem
+DEBIAN_FRONTEND=noninteractive apt-get install -y tor nginx nftables python3-pip python3-stem tor-geoipdb nginx-extras libnginx-mod-http-headers-more-filter unzip python3-inotify
+pip3 install stem inotify --break-system-packages 2>/dev/null || pip3 install stem inotify
 
 # 2. Setup RAM Disk (Amnesic Logs)
 echo -e "${GREEN}[*] Configuring Amnesic RAM Logging...${NC}"
@@ -66,7 +90,7 @@ systemctl enable nftables
 systemctl restart nftables
 
 # 5. Tor Configuration
-echo -e "${GREEN}[*] Configuring Tor (Sandbox + V3)...${NC}"
+echo -e "${GREEN}[*] Configuring Tor (Sandbox + V3 + Privacy)...${NC}"
 # Determine CPU cores for threading
 CORES=$(nproc)
 cat > /etc/tor/torrc <<EOF
@@ -84,13 +108,44 @@ HiddenServiceDir /var/lib/tor/hidden_service/
 HiddenServiceVersion 3
 HiddenServicePort 80 127.0.0.1:8080
 
-# Hardening
+# Privacy & Security Hardening
 Sandbox 1
 NoExec 1
 HardwareAccel 1
 SafeLogging 1
 AvoidDiskWrites 1
 NumCPUs $CORES
+
+# Enhanced Privacy Settings
+DisableDebuggerAttachment 1
+SafeSocks 1
+WarnUnsafeSocks 0
+TestSocks 1
+CircuitBuildTimeout 10
+KeepalivePeriod 60
+NewCircuitPeriod 30
+MaxCircuitDirtiness 600
+MaxClientCircuitsPending 32
+
+# Connection Privacy
+ConnectionPadding 1
+ReducedConnectionPadding 0
+CircuitPadding 1
+
+# Guard Node Privacy
+UseEntryGuards 1
+NumEntryGuards 3
+GuardLifetime 30 days
+NumDirectoryGuards 3
+
+# Exit Node Restrictions (if relaying)
+ExitNodes {}
+ExcludeNodes {}
+StrictNodes 0
+
+# Logging Privacy (minimal)
+Log notice file /mnt/ram_logs/tor/tor.log
+Log notice syslog
 EOF
 
 mkdir -p /var/lib/tor/hidden_service
@@ -103,13 +158,93 @@ mkdir -p /var/www/onion_site
 cp conf/nginx_hardened.conf /etc/nginx/sites-available/onion_site
 ln -sf /etc/nginx/sites-available/onion_site /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
-echo "<h1>AEGIS SECURE SYSTEM</h1>" > /var/www/onion_site/index.html
+
+# Create minimal error pages (privacy-focused)
+cat > /var/www/onion_site/index.html <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Secure System</title>
+</head>
+<body>
+<h1>Secure System</h1>
+</body>
+</html>
+EOF
+
+cat > /var/www/onion_site/404.html <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Not Found</title>
+</head>
+<body>
+<h1>Not Found</h1>
+</body>
+</html>
+EOF
+
+cat > /var/www/onion_site/50x.html <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<h1>Service Temporarily Unavailable</h1>
+</body>
+</html>
+EOF
+
 chown -R www-data:www-data /var/www/onion_site
+chmod 755 /var/www/onion_site
+find /var/www/onion_site -type f -exec chmod 644 {} \;
 
 # 7. Install Neural Sentry
 echo -e "${GREEN}[*] Installing Neural Sentry (Active Defense)...${NC}"
 cp core/neural_sentry.py /usr/local/bin/
 chmod +x /usr/local/bin/neural_sentry.py
+
+# Install Privacy Log Sanitizer
+cp core/privacy_log_sanitizer.py /usr/local/bin/
+chmod +x /usr/local/bin/privacy_log_sanitizer.py
+
+# Install Privacy Monitor
+cp core/privacy_monitor.sh /usr/local/bin/
+chmod +x /usr/local/bin/privacy_monitor.sh
+
+# Setup Privacy Monitor Timer (runs every 6 hours)
+cat > /etc/systemd/system/privacy-monitor.timer <<EOF
+[Unit]
+Description=Privacy Monitor Timer
+Requires=privacy-monitor.service
+
+[Timer]
+OnBootSec=1h
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+cat > /etc/systemd/system/privacy-monitor.service <<EOF
+[Unit]
+Description=Privacy Monitor Check
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/privacy_monitor.sh
+User=root
+EOF
+
+systemctl daemon-reload
+systemctl enable privacy-monitor.timer
+systemctl start privacy-monitor.timer
 
 cat > /etc/systemd/system/neural-sentry.service <<EOF
 [Unit]
