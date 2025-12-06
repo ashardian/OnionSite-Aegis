@@ -19,8 +19,8 @@ Include a comment or notice like:
 
 ```bash
 # OnionSite-Aegis - Privacy-Focused Tor Hidden Service Orchestrator
-# Created by [Your Name/Author Name]
-# https://github.com/[your-repo]/OnionSite-Aegis
+# Created by Ashar Dian
+# https://github.com/ashardian/OnionSite-Aegis.git
 ```
 
 ### In README Files
@@ -30,21 +30,21 @@ Add a section like:
 ```markdown
 ## Credits
 
-This project uses [OnionSite-Aegis](https://github.com/[repo]/OnionSite-Aegis) 
-by [Author Name]. Shoutout to the creator for this amazing privacy-focused tool!
+This project uses [OnionSite-Aegis](https://github.com/ashardian/OnionSite-Aegis.git) 
+by Ashar Dian. Shoutout to the creator for this amazing privacy-focused tool!
 ```
 
 ### In Videos/Tutorials
 
 Verbally mention:
-- "This is OnionSite-Aegis by [Author Name]"
-- "Shoutout to [Author Name] for creating OnionSite-Aegis"
-- "Credit to [Author Name] for this privacy tool"
+- "This is OnionSite-Aegis by Ashar Dian"
+- "Shoutout to Ashar Dian for creating OnionSite-Aegis"
+- "Credit to Ashar Dian for this privacy tool"
 
 And include in video description:
 ```
 Tools used:
-- OnionSite-Aegis by [Author Name] - https://github.com/[repo]/OnionSite-Aegis
+- OnionSite-Aegis by Ashar Dian - https://github.com/ashardian/OnionSite-Aegis.git
 ```
 
 ### In Blog Posts/Articles
@@ -52,7 +52,7 @@ Tools used:
 Include:
 - A link to the original repository
 - Credit to the author
-- A mention like: "OnionSite-Aegis, created by [Author Name], is a..."
+- A mention like: "OnionSite-Aegis, created by Ashar Dian, is a..."
 
 ### In Social Media
 
@@ -64,10 +64,10 @@ When posting about OnionSite-Aegis:
 ## Examples of Good Attribution
 
 ✅ **Good:**
-- "Built with OnionSite-Aegis by [Author Name]"
-- "Using OnionSite-Aegis - credit to [Author Name]"
-- "Shoutout to [Author Name] for OnionSite-Aegis!"
-- "Powered by OnionSite-Aegis - https://github.com/[repo]"
+- "Built with OnionSite-Aegis by Ashar Dian"
+- "Using OnionSite-Aegis - credit to Ashar Dian"
+- "Shoutout to Ashar Dian for OnionSite-Aegis!"
+- "Powered by OnionSite-Aegis - https://github.com/ashardian/OnionSite-Aegis.git"
 
 ❌ **Bad:**
 - Using without any mention
