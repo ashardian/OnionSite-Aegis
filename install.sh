@@ -152,12 +152,20 @@ print_progress "Configuring Tor (Sandbox + V3 + Privacy)..."
 # Check if Tor uses multi-instance system
 TORRC_FILE="/etc/tor/torrc"
 TOR_DATA_DIR="/var/lib/tor"
-if [ -d "/etc/tor/instances" ]; then
-    # Multi-instance system detected
+TOR_MULTI_INSTANCE=false
+
+# Check if multi-instance system actually exists and is configured
+if [ -d "/etc/tor/instances" ] && systemctl list-unit-files | grep -q "tor@.service"; then
+    # Multi-instance system detected and available
     print_progress "Detected Tor multi-instance system, configuring default instance..."
     mkdir -p /etc/tor/instances/default
     TORRC_FILE="/etc/tor/instances/default/torrc"
     TOR_DATA_DIR="/var/lib/tor/default"
+    TOR_MULTI_INSTANCE=true
+else
+    # Standard Tor installation
+    print_progress "Using standard Tor installation..."
+    TOR_MULTI_INSTANCE=false
 fi
 
 # Ensure hidden service directory exists BEFORE configuring Tor
@@ -387,7 +395,13 @@ print_progress "Deploying Web Application Firewall (ModSecurity)..."
 if [ ! -f core/waf_deploy.sh ]; then
     echo -e "${RED}[WARNING]${NC} waf_deploy.sh not found. Skipping WAF deployment."
 else
-    bash core/waf_deploy.sh || echo -e "${RED}[WARNING]${NC} WAF deployment had issues, continuing..."
+    # WAF deployment may fail due to network issues - handle gracefully
+    if bash core/waf_deploy.sh 2>&1; then
+        print_progress "WAF deployed successfully."
+    else
+        echo -e "${RED}[WARNING]${NC} WAF deployment encountered issues (possibly network-related)."
+        echo -e "${RED}[WARNING]${NC} Continuing installation without WAF. You can deploy it later manually."
+    fi
 fi
 
 # 7.6 Apply AppArmor Profile
@@ -413,17 +427,19 @@ print_progress "Starting all services..."
 print_progress "Reloading systemd and starting Tor..."
 systemctl daemon-reload
 
-# Check if Tor uses multi-instance system
+# Determine which Tor service to use based on actual system configuration
 TOR_SERVICE="tor"
-if systemctl list-unit-files | grep -q "tor@.service"; then
-    # Multi-instance system detected - use tor@default
+if [ "$TOR_MULTI_INSTANCE" = true ] && systemctl list-unit-files | grep -q "tor@.service"; then
+    # Multi-instance system - use tor@default
     TOR_SERVICE="tor@default"
-    print_progress "Detected Tor multi-instance system, using tor@default.service"
+    print_progress "Using Tor multi-instance service: tor@default.service"
     
     # Ensure tor@default is enabled
     systemctl enable tor@default 2>/dev/null || true
 else
     # Standard system - use tor.service
+    TOR_SERVICE="tor"
+    print_progress "Using standard Tor service: tor.service"
     systemctl enable tor 2>/dev/null || true
 fi
 
@@ -432,12 +448,25 @@ systemctl stop tor@default 2>/dev/null || true
 systemctl stop tor 2>/dev/null || true
 
 # Start Tor
+print_progress "Starting Tor service ($TOR_SERVICE)..."
 if ! systemctl start "$TOR_SERVICE"; then
-    print_error "Failed to start Tor service ($TOR_SERVICE). Check configuration and logs."
+    echo -e "${RED}[ERROR] Failed to start Tor service ($TOR_SERVICE).${NC}"
+    echo -e "${RED}[ERROR] Checking service status...${NC}"
+    systemctl status "$TOR_SERVICE" --no-pager || true
+    echo -e "${RED}[ERROR] Checking Tor logs...${NC}"
+    journalctl -xeu "$TOR_SERVICE" --no-pager | tail -n 30 || journalctl -xeu tor --no-pager | tail -n 30
+    echo -e "${RED}[ERROR] Checking Tor configuration...${NC}"
+    if [ -f "$TORRC_FILE" ]; then
+        echo "Tor config file exists: $TORRC_FILE"
+        grep -i "HiddenService\|DataDirectory" "$TORRC_FILE" | head -n 5 || true
+    else
+        echo "Tor config file NOT found: $TORRC_FILE"
+    fi
+    print_error "Tor failed to start. Please check configuration and logs above."
 fi
 
 # Verify Tor is actually running
-sleep 2
+sleep 3
 if ! systemctl is-active --quiet "$TOR_SERVICE"; then
     echo -e "${RED}[ERROR] Tor service ($TOR_SERVICE) is not active after start.${NC}"
     systemctl status "$TOR_SERVICE" --no-pager || true
@@ -450,6 +479,8 @@ if ! pgrep -x tor >/dev/null; then
     systemctl status "$TOR_SERVICE" --no-pager || true
     print_error "Tor process not found. Check Tor configuration and logs."
 fi
+
+print_progress "Tor service started successfully."
 
 # Wait for Tor to initialize the hidden service (with retries)
 print_progress "Waiting for Tor to create hidden service..."
