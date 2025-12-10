@@ -149,25 +149,36 @@ fi
 # 5. Tor Configuration
 print_progress "Configuring Tor (Sandbox + V3 + Privacy)..."
 
+# Check if Tor uses multi-instance system
+TORRC_FILE="/etc/tor/torrc"
+TOR_DATA_DIR="/var/lib/tor"
+if [ -d "/etc/tor/instances" ]; then
+    # Multi-instance system detected
+    print_progress "Detected Tor multi-instance system, configuring default instance..."
+    mkdir -p /etc/tor/instances/default
+    TORRC_FILE="/etc/tor/instances/default/torrc"
+    TOR_DATA_DIR="/var/lib/tor/default"
+fi
+
 # Ensure hidden service directory exists BEFORE configuring Tor
 print_progress "Creating hidden service directory..."
-mkdir -p /var/lib/tor/hidden_service
-chown -R debian-tor:debian-tor /var/lib/tor/hidden_service
-chmod 700 /var/lib/tor/hidden_service
+mkdir -p "$TOR_DATA_DIR/hidden_service"
+chown -R debian-tor:debian-tor "$TOR_DATA_DIR"
+chmod 700 "$TOR_DATA_DIR/hidden_service"
 
 # Remove duplicate HiddenServiceDir lines from existing torrc (if any)
-if [ -f /etc/tor/torrc ]; then
+if [ -f "$TORRC_FILE" ]; then
     print_progress "Removing duplicate HiddenServiceDir entries..."
     # Create a temporary file without duplicate HiddenServiceDir lines
-    grep -v "^HiddenServiceDir" /etc/tor/torrc > /tmp/torrc.clean 2>/dev/null || true
+    grep -v "^HiddenServiceDir" "$TORRC_FILE" > /tmp/torrc.clean 2>/dev/null || true
     # Also remove lines that might have HiddenServiceDir with spaces/tabs
     sed -i '/^[[:space:]]*HiddenServiceDir/d' /tmp/torrc.clean 2>/dev/null || true
 fi
 
 # Determine CPU cores for threading
 CORES=$(nproc)
-cat > /etc/tor/torrc <<EOF
-DataDirectory /var/lib/tor
+cat > "$TORRC_FILE" <<EOF
+DataDirectory $TOR_DATA_DIR
 PidFile /run/tor/tor.pid
 RunAsDaemon 1
 User debian-tor
@@ -177,7 +188,7 @@ ControlPort 9051
 CookieAuthentication 1
 
 # OnionSite-Aegis Hidden Service
-HiddenServiceDir /var/lib/tor/hidden_service/
+HiddenServiceDir $TOR_DATA_DIR/hidden_service/
 HiddenServiceVersion 3
 HiddenServicePort 80 127.0.0.1:8080
 
@@ -401,8 +412,43 @@ print_progress "Starting all services..."
 # Reload systemd and restart Tor
 print_progress "Reloading systemd and starting Tor..."
 systemctl daemon-reload
-if ! systemctl restart tor; then
-    print_error "Failed to restart Tor service."
+
+# Check if Tor uses multi-instance system
+TOR_SERVICE="tor"
+if systemctl list-unit-files | grep -q "tor@.service"; then
+    # Multi-instance system detected - use tor@default
+    TOR_SERVICE="tor@default"
+    print_progress "Detected Tor multi-instance system, using tor@default.service"
+    
+    # Ensure tor@default is enabled
+    systemctl enable tor@default 2>/dev/null || true
+else
+    # Standard system - use tor.service
+    systemctl enable tor 2>/dev/null || true
+fi
+
+# Stop any existing Tor instances
+systemctl stop tor@default 2>/dev/null || true
+systemctl stop tor 2>/dev/null || true
+
+# Start Tor
+if ! systemctl start "$TOR_SERVICE"; then
+    print_error "Failed to start Tor service ($TOR_SERVICE). Check configuration and logs."
+fi
+
+# Verify Tor is actually running
+sleep 2
+if ! systemctl is-active --quiet "$TOR_SERVICE"; then
+    echo -e "${RED}[ERROR] Tor service ($TOR_SERVICE) is not active after start.${NC}"
+    systemctl status "$TOR_SERVICE" --no-pager || true
+    print_error "Tor failed to start. Please check configuration."
+fi
+
+# Verify Tor process is running
+if ! pgrep -x tor >/dev/null; then
+    echo -e "${RED}[ERROR] Tor process is not running.${NC}"
+    systemctl status "$TOR_SERVICE" --no-pager || true
+    print_error "Tor process not found. Check Tor configuration and logs."
 fi
 
 # Wait for Tor to initialize the hidden service (with retries)
@@ -411,9 +457,12 @@ MAX_ATTEMPTS=30
 ATTEMPT=0
 HOSTNAME=""
 
+# Determine hostname file location based on Tor instance
+HOSTNAME_FILE="$TOR_DATA_DIR/hidden_service/hostname"
+
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-    if [ -f /var/lib/tor/hidden_service/hostname ]; then
-        HOSTNAME=$(cat /var/lib/tor/hidden_service/hostname)
+    if [ -f "$HOSTNAME_FILE" ]; then
+        HOSTNAME=$(cat "$HOSTNAME_FILE")
         break
     fi
     sleep 2
@@ -421,12 +470,19 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
 done
 
 # Verify that Tor created the hostname file
-if [ -z "$HOSTNAME" ] || [ ! -f /var/lib/tor/hidden_service/hostname ]; then
+if [ -z "$HOSTNAME" ] || [ ! -f "$HOSTNAME_FILE" ]; then
     echo -e "${RED}[ERROR] Tor did not create the hidden service hostname after $MAX_ATTEMPTS attempts.${NC}"
+    echo -e "${RED}[ERROR] Expected hostname file: $HOSTNAME_FILE${NC}"
     echo -e "${RED}[ERROR] Checking Tor service status...${NC}"
-    systemctl status tor --no-pager || true
+    systemctl status "$TOR_SERVICE" --no-pager || true
+    echo -e "${RED}[ERROR] Checking if Tor process is running...${NC}"
+    pgrep -a tor || echo "No Tor process found"
     echo -e "${RED}[ERROR] Checking Tor logs...${NC}"
-    journalctl -xeu tor --no-pager | tail -n 50
+    journalctl -xeu "$TOR_SERVICE" --no-pager | tail -n 50 || journalctl -xeu tor --no-pager | tail -n 50
+    echo -e "${RED}[ERROR] Checking Tor configuration...${NC}"
+    grep -i "HiddenService" "$TORRC_FILE" || echo "No HiddenService found in $TORRC_FILE"
+    echo -e "${RED}[ERROR] Checking directory permissions...${NC}"
+    ls -la "$TOR_DATA_DIR/hidden_service/" || echo "Directory does not exist"
     print_error "Hidden service creation failed. Please check Tor configuration and logs."
 fi
 
@@ -436,9 +492,9 @@ echo -e "${GREEN}[*] Onion address: ${CYAN}$HOSTNAME${NC}"
 
 # Ensure the hidden service directory is never deleted (add protection comment)
 # This directory contains the private key - DO NOT DELETE
-if [ -d /var/lib/tor/hidden_service ]; then
+if [ -d "$TOR_DATA_DIR/hidden_service" ]; then
     # Set immutable flag if supported (extra protection)
-    chattr +i /var/lib/tor/hidden_service/hostname 2>/dev/null || true
+    chattr +i "$HOSTNAME_FILE" 2>/dev/null || true
 fi
 
 systemctl restart nginx
