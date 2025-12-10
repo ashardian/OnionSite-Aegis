@@ -17,9 +17,19 @@
 - 🚫 **Zero Fingerprinting** - Complete header removal and response padding
 - ⚡ **Traffic Analysis Resistant** - Response size padding and timing randomization
 
+## 📖 Setup Guide
+
+**👉 For detailed setup instructions, see [SETUP.md](SETUP.md)**
+
+The setup guide includes:
+- Step-by-step installation for both Docker and bare metal
+- Troubleshooting guide
+- Maintenance procedures
+- Security best practices
+
 ## 🐳 Docker Deployment (Recommended)
 
-For enhanced security and isolation, **Docker deployment is recommended**. See [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) for complete guide.
+For enhanced security and isolation, **Docker deployment is recommended**. See [SETUP.md](SETUP.md) for complete guide.
 
 **Quick Start:**
 ```bash
@@ -118,25 +128,192 @@ See [conf/nftables.conf](conf/nftables.conf) for configuration details.
 
 ## 🛠️ Installation
 
-1. **Unzip the suite:**
+### Prerequisites
+- **Operating System:** Debian 11+ or Parrot OS (Ubuntu 20.04+ may work but not tested)
+- **Root Access:** Required for system-level configuration
+- **Disk Space:** At least 500MB free space
+- **Network:** Internet connection for package installation
+
+### Method 1: Bare Metal Installation (Recommended for Production)
+
+1. **Download and Extract:**
    ```bash
    unzip OnionSite-Aegis.zip
    cd OnionSite-Aegis
-
+   ```
 
 2. **Run the Installer:**
+   ```bash
+   sudo chmod +x install.sh
+   sudo ./install.sh
+   ```
 
+   The installer will:
+   - Check system requirements
+   - Install all dependencies
+   - Configure Tor hidden service
+   - Set up Nginx with privacy hardening
+   - Deploy Neural Sentry and WAF
+   - Configure firewall (NFTables)
+   - Start all services
+
+3. **Get Your Onion Address:**
+   ```bash
+   sudo cat /var/lib/tor/hidden_service/hostname
+   ```
+
+4. **Verify Installation:**
+   ```bash
+   # Check services
+   sudo systemctl status neural-sentry
+   sudo systemctl status tor
+   sudo systemctl status nginx
+   sudo systemctl status privacy-monitor.timer
+   
+   # Check logs (RAM-based)
+   ls -la /mnt/ram_logs
+   
+   # Verify hidden service
+   sudo test -f /var/lib/tor/hidden_service/hostname && echo "✓ Hidden service created"
+   ```
+
+### Method 2: Docker Installation (Recommended for Testing/Development)
+
+1. **Prerequisites:**
+   - Docker Engine 20.10+
+   - Docker Compose 2.0+
+
+2. **Setup:**
+   ```bash
+   # Clone or extract the repository
+   cd OnionSite-Aegis
+   
+   # Create required directories
+   mkdir -p data/tor-keys webroot
+   
+   # Create your web content
+   echo "<h1>My Onion Site</h1>" > webroot/index.html
+   ```
+
+3. **Build and Run:**
+   ```bash
+   # Build the image
+   docker-compose build
+   
+   # Start the container
+   docker-compose up -d
+   
+   # View logs
+   docker-compose logs -f
+   ```
+
+4. **Get Your Onion Address:**
+   ```bash
+   # Wait a few seconds for Tor to initialize, then:
+   docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
+   
+   # Or check logs for the address
+   docker-compose logs aegis | grep "Onion address"
+   ```
+
+5. **Verify Installation:**
+   ```bash
+   # Check container status
+   docker-compose ps
+   
+   # Check health
+   docker-compose exec aegis test -f /var/lib/tor/hidden_service/hostname && echo "✓ Hidden service created"
+   
+   # Access shell (if needed)
+   docker-compose exec aegis /bin/bash
+   ```
+
+### Docker vs Bare Metal Comparison
+
+| Feature | Docker | Bare Metal |
+|---------|--------|------------|
+| **Setup Time** | ~5 minutes | ~10 minutes |
+| **Isolation** | High (container) | Low (system-wide) |
+| **Security** | Enhanced (seccomp, capabilities) | Good (system hardening) |
+| **Resource Control** | Built-in limits | Manual configuration |
+| **Portability** | High (works anywhere) | Low (OS-specific) |
+| **Maintenance** | Easy (container updates) | Manual (system updates) |
+| **Best For** | Testing, development, isolation | Production, full control |
+
+### Troubleshooting
+
+#### Hidden Service Not Created
+
+**Bare Metal:**
 ```bash
-sudo chmod +x install.sh
-sudo ./install.sh
+# Check Tor service status
+sudo systemctl status tor
+
+# Check Tor logs
+sudo journalctl -xeu tor --no-pager | tail -n 50
+
+# Verify directory permissions
+sudo ls -la /var/lib/tor/hidden_service/
+sudo chown -R debian-tor:debian-tor /var/lib/tor/hidden_service
+sudo chmod 700 /var/lib/tor/hidden_service
+
+# Restart Tor
+sudo systemctl restart tor
 ```
 
-3. **Verify Status:**
+**Docker:**
+```bash
+# Check container logs
+docker-compose logs aegis | grep -i "error\|tor\|hidden"
+
+# Check if Tor is running
+docker-compose exec aegis ps aux | grep tor
+
+# Verify directory exists
+docker-compose exec aegis ls -la /var/lib/tor/hidden_service/
+
+# Restart container
+docker-compose restart aegis
+```
+
+#### NFTables Errors
 
 ```bash
-systemctl status neural-sentry
-systemctl status privacy-monitor.timer
-ls -la /mnt/ram_logs
+# Validate configuration
+sudo nft -c -f /etc/nftables.conf
+
+# Check service status
+sudo systemctl status nftables
+
+# View errors
+sudo journalctl -xeu nftables --no-pager
+```
+
+#### Service Won't Start
+
+```bash
+# Check all services
+sudo systemctl status tor nginx neural-sentry
+
+# Check for port conflicts
+sudo netstat -tulpn | grep -E '9050|9051|8080'
+
+# Verify configuration files exist
+sudo test -f /etc/tor/torrc && echo "✓ Tor config exists"
+sudo test -f /etc/nginx/sites-available/onion_site && echo "✓ Nginx config exists"
+```
+
+#### Docker Container Exits Immediately
+
+```bash
+# Check exit code
+docker-compose ps -a
+
+# View full logs
+docker-compose logs --tail=100 aegis
+
+# Run interactively to debug
+docker-compose run --rm aegis /bin/bash
 ```
 
 ## 🧠 Usage

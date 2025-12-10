@@ -65,10 +65,10 @@ COPY, MODIFY, OR DISTRIBUTE THE SOFTWARE.
    c) Maintain all attribution and copyright notices in their original form.
 
    Examples of acceptable attribution:
-   - "Powered by OnionSite-Aegis by Ashar Dian"
-   - "Built using OnionSite-Aegis - https://github.com/ashardian/OnionSite-Aegis.git"
+   - "Powered by OnionSite-Aegis by [Author Name]"
+   - "Built using OnionSite-Aegis - https://github.com/[repo]"
    - "Shoutout to [Author Name] for creating OnionSite-Aegis"
-   - "This project uses OnionSite-Aegis - credit to Ashar Dian"
+   - "This project uses OnionSite-Aegis - credit to [Author Name]"
 
 5. NO WARRANTY AND DISCLAIMER OF LIABILITY
 

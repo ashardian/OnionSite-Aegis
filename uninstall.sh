@@ -29,6 +29,9 @@ rm -f /usr/local/bin/privacy_log_sanitizer.py
 rm -f /usr/local/bin/privacy_monitor.sh
 rm -f /usr/local/bin/init_ram_logs.sh
 
+# NOTE: /var/lib/tor/hidden_service/ is NOT deleted to preserve the onion service identity
+# If you want to delete it, do so manually: rm -rf /var/lib/tor/hidden_service/
+
 # Reset Firewall (UFW default)
 nft flush ruleset
 ufw disable

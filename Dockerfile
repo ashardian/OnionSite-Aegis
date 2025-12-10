@@ -89,10 +89,8 @@ RUN chown -R debian-tor:debian-tor /var/lib/tor && \
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Security: Remove unnecessary packages and clean up
-RUN apt-get purge -y git curl && \
-    apt-get autoremove -y && \
-    rm -rf /tmp/conf /tmp/core
+# Security: Clean up temporary files (keep git/curl for WAF deployment at runtime)
+RUN rm -rf /tmp/conf /tmp/core
 
 # Expose ports (only for documentation - actual binding via docker)
 # Tor: 9050 (SOCKS), 9051 (Control)

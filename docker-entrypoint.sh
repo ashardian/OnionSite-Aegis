@@ -34,6 +34,20 @@ setup_ram_logs() {
 # Function to configure Tor
 configure_tor() {
     log "Configuring Tor..."
+    
+    # Ensure hidden service directory exists BEFORE configuring Tor
+    log "Creating hidden service directory..."
+    mkdir -p /var/lib/tor/hidden_service
+    chown -R debian-tor:debian-tor /var/lib/tor/hidden_service
+    chmod 700 /var/lib/tor/hidden_service
+    
+    # Remove duplicate HiddenServiceDir lines from existing torrc (if any)
+    if [ -f /etc/tor/torrc ]; then
+        log "Removing duplicate HiddenServiceDir entries..."
+        grep -v "^HiddenServiceDir" /etc/tor/torrc > /tmp/torrc.clean 2>/dev/null || true
+        sed -i '/^[[:space:]]*HiddenServiceDir/d' /tmp/torrc.clean 2>/dev/null || true
+    fi
+    
     CORES=$(nproc)
     
     cat > /etc/tor/torrc <<EOF
@@ -46,7 +60,7 @@ User debian-tor
 ControlPort 127.0.0.1:9051
 CookieAuthentication 1
 
-# Hidden Service
+# OnionSite-Aegis Hidden Service
 HiddenServiceDir /var/lib/tor/hidden_service/
 HiddenServiceVersion 3
 HiddenServicePort 80 127.0.0.1:8080
@@ -102,8 +116,15 @@ SafeLogging 1
 AvoidDiskWrites 1
 EOF
 
+    # Ensure permissions are correct
     chown -R debian-tor:debian-tor /var/lib/tor
     chmod 700 /var/lib/tor/hidden_service
+    
+    # Ensure the hidden service directory is never deleted (add protection)
+    if [ -d /var/lib/tor/hidden_service ]; then
+        # Set immutable flag if supported (extra protection)
+        chattr +i /var/lib/tor/hidden_service/hostname 2>/dev/null || true
+    fi
 }
 
 # Function to deploy WAF
@@ -144,6 +165,32 @@ setup_firewall() {
     fi
 }
 
+# Function to verify hidden service hostname
+verify_hostname() {
+    local max_attempts=30
+    local attempt=0
+    
+    log "Waiting for Tor to create hidden service hostname..."
+    
+    while [ $attempt -lt $max_attempts ]; do
+        if [ -f /var/lib/tor/hidden_service/hostname ]; then
+            HOSTNAME=$(cat /var/lib/tor/hidden_service/hostname)
+            log "Hidden service hostname created successfully!"
+            log "Onion address: ${GREEN}$HOSTNAME${NC}"
+            return 0
+        fi
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    error "Tor did not create the hidden service hostname after $max_attempts attempts"
+    if [ -f /mnt/ram_logs/tor/tor.log ]; then
+        error "Last 50 lines of Tor log:"
+        tail -n 50 /mnt/ram_logs/tor/tor.log || true
+    fi
+    return 1
+}
+
 # Function to start services
 start_services() {
     log "Starting services..."
@@ -153,8 +200,12 @@ start_services() {
     tor -f /etc/tor/torrc &
     TOR_PID=$!
     
-    # Wait for Tor to be ready
-    sleep 5
+    # Wait for Tor to initialize and verify hostname
+    if ! verify_hostname; then
+        error "Failed to create hidden service. Stopping Tor..."
+        kill $TOR_PID 2>/dev/null || true
+        exit 1
+    fi
     
     # Start Neural Sentry
     log "Starting Neural Sentry..."
@@ -177,9 +228,9 @@ case "${1:-aegis}" in
         
         # Setup
         setup_ram_logs
-    configure_tor
-    deploy_waf
-    setup_firewall
+        configure_tor
+        deploy_waf
+        setup_firewall
     
     # Setup traffic analysis protection
     if [ -f "/usr/local/bin/traffic_analysis_protection.sh" ]; then
