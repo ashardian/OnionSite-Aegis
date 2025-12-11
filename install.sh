@@ -1,290 +1,234 @@
 #!/bin/bash
 
 ################################################################################
-# OnionSite-Aegis Production-Grade Installer Script (FIXED VERSION)
-# Version: 1.0.1 (Patched)
-# Description: Comprehensive deployment with Tor, Hardening, and Monitoring
+# OnionSite-Aegis: Ultimate Production Installer
+# Version: 3.2 (Self-Healing / Fallback Mode)
+# Target: Debian 12/13 & Ubuntu 22.04+
+# Fixes: Nginx WAF crashes, Service masking, Permissions
 ################################################################################
 
+# 1. ROBUST ERROR HANDLING
+# ------------------------------------------------------------------------------
+set -e
 set -o pipefail
-# We do NOT use 'set -e' globally because we want to handle errors manually in some spots
+# Trap errors to show the exact line number where it failed
+trap 'echo -e "\n\033[0;31m[CRITICAL FAILURE] Script stopped at line $LINENO. Please check logs.\033[0m"; exit 1' ERR
 
-# Color codes for output
+# 2. CONFIGURATION
+# ------------------------------------------------------------------------------
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-# Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_DIR="${SCRIPT_DIR}/logs"
-LOG_FILE="${LOG_DIR}/install_$(date +%Y%m%d_%H%M%S).log"
-REQUIRED_USER="ashardian" # Change this if needed
-MIN_DISK_SPACE_MB=500
-DEPLOYMENT_DIR="/opt/onionsite-aegis"
-TOR_HS_DIR="/var/lib/tor/hidden_service"
+LOG_FILE="/var/log/aegis_install.log"
+TOR_DIR="/var/lib/tor"
+HS_DIR="$TOR_DIR/hidden_service"
+WEB_DIR="/var/www/onionsite"
+NGINX_MODSEC_DIR="/etc/nginx/modsec"
 
-# Create logs directory
-mkdir -p "${LOG_DIR}"
+log() { echo -e "${BLUE}[INFO]${NC} $1" | tee -a "$LOG_FILE"; }
+success() { echo -e "${GREEN}[SUCCESS]${NC} $1" | tee -a "$LOG_FILE"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1" | tee -a "$LOG_FILE"; }
 
-################################################################################
-# Logging Functions
-################################################################################
+# 3. PRE-FLIGHT CHECKS
+# ------------------------------------------------------------------------------
+clear
+echo -e "${GREEN}=== STARTING AEGIS DEPLOYMENT v3.2 ===${NC}"
 
-log_info() { echo -e "${BLUE}[INFO]${NC} $1" | tee -a "${LOG_FILE}"; }
-log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1" | tee -a "${LOG_FILE}"; }
-log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1" | tee -a "${LOG_FILE}"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1" | tee -a "${LOG_FILE}"; }
+if [[ $EUID -ne 0 ]]; then
+   echo -e "${RED}[!] Must be run as root.${NC}"
+   exit 1
+fi
 
-log_section() {
-    echo "" | tee -a "${LOG_FILE}"
-    echo "================================================================================" | tee -a "${LOG_FILE}"
-    echo "$1" | tee -a "${LOG_FILE}"
-    echo "================================================================================" | tee -a "${LOG_FILE}"
-}
+# SELF-HEALING: Unlock network
+if command -v nft &> /dev/null; then nft flush ruleset 2>/dev/null || true; fi
+if command -v iptables &> /dev/null; then iptables -F 2>/dev/null || true; fi
 
-################################################################################
-# Pre-Flight Checks & Network Reset
-################################################################################
+# SYSTEM CLOCK (Container Safe)
+if timedatectl set-ntp true 2>/dev/null; then
+    success "Time sync active."
+else
+    warn "NTP not supported (Container/VPS). Skipping."
+fi
 
-# CRITICAL FIX: Reset network blocking to allow apt-get to work
-reset_network_locks() {
-    log_info "Ensuring network is open for installation..."
-    if command -v nft &> /dev/null; then
-        nft flush ruleset 2>/dev/null || true
-    fi
-    if command -v iptables &> /dev/null; then
-        iptables -F 2>/dev/null || true
-    fi
-    # Temporary DNS fix if resolution is broken
-    if ! grep -q "8.8.8.8" /etc/resolv.conf; then
-        echo "nameserver 8.8.8.8" > /etc/resolv.conf
-    fi
-}
+# 4. DEPENDENCIES
+# ------------------------------------------------------------------------------
+log "Installing Dependencies..."
+apt-get update -q
+DEPS="curl wget git build-essential tor nginx nftables \
+python3-pip python3-stem python3-inotify python3-requests \
+apparmor-utils apparmor-profiles python3-apparmor \
+libmodsecurity3 libnginx-mod-http-modsecurity"
 
-check_sudo_root_execution() {
-    if [[ $EUID -ne 0 ]]; then
-        log_error "This script must be run as root (sudo)."
-        exit 1
-    fi
-    log_success "Running with root privileges"
-}
+apt-get install -y --no-install-recommends $DEPS
+success "Dependencies installed."
 
-check_system_requirements() {
-    log_section "Checking System Requirements"
-    
-    # Check OS
-    if [[ -f /etc/os-release ]]; then
-        source /etc/os-release
-        log_info "Operating System: ${PRETTY_NAME}"
-    fi
-    
-    # Check available disk space
-    local available_space=$(df "${SCRIPT_DIR}" | awk 'NR==2 {print $4}')
-    if [[ ${available_space} -lt $((MIN_DISK_SPACE_MB * 1024)) ]]; then
-        log_error "Insufficient disk space."
-        exit 1
-    fi
-    log_success "Disk space check passed."
-}
+# 5. KERNEL HARDENING
+# ------------------------------------------------------------------------------
+log "Applying Kernel Security..."
+cat > /etc/sysctl.d/99-aegis.conf <<EOF
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.tcp_syncookies = 1
+EOF
+if sysctl --system >/dev/null 2>&1; then
+    success "Kernel hardened."
+else
+    warn "Kernel hardening skipped (Container)."
+fi
 
-################################################################################
-# Permission Management
-################################################################################
+# 6. TOR CONFIGURATION
+# ------------------------------------------------------------------------------
+log "Configuring Tor..."
+systemctl unmask tor.service tor@default.service >/dev/null 2>&1 || true
+systemctl stop tor >/dev/null 2>&1 || true
 
-fix_permissions() {
-    log_section "Setting up Deployment Directory"
-    
-    if [[ ! -d "${DEPLOYMENT_DIR}" ]]; then
-        log_info "Creating deployment directory: ${DEPLOYMENT_DIR}"
-        mkdir -p "${DEPLOYMENT_DIR}"
-    fi
+# Backup config
+if [ -f /etc/tor/torrc ] && [ ! -f /etc/tor/torrc.bak ]; then
+    cp /etc/tor/torrc /etc/tor/torrc.bak
+fi
 
-    # Create subdirectories structure
-    mkdir -p "${DEPLOYMENT_DIR}/config"
-    mkdir -p "${DEPLOYMENT_DIR}/core"
-    mkdir -p "${DEPLOYMENT_DIR}/logs"
-
-    # FIX: Only attempt chown if the user exists
-    if id "$REQUIRED_USER" &>/dev/null; then
-        chown -R "${REQUIRED_USER}:${REQUIRED_USER}" "${DEPLOYMENT_DIR}"
-    else
-        log_warning "User '$REQUIRED_USER' not found. Defaulting to root ownership."
-    fi
-
-    chmod -R 755 "${DEPLOYMENT_DIR}"
-    log_success "Directory structure created and permissions set."
-}
-
-################################################################################
-# Dependency Installation (FIXED for Debian 12)
-################################################################################
-
-install_dependencies() {
-    log_section "Installing Dependencies"
-
-    # 1. Reset Network locks first
-    reset_network_locks
-    
-    log_info "Updating package lists..."
-    apt-get update -y || log_warning "Apt update had minor issues, attempting to continue..."
-
-    # FIX: Install ALL Python deps via apt to avoid PEP 668 errors
-    local packages="curl wget git tor nginx nftables python3-pip python3-stem python3-inotify python3-requests build-essential libssl-dev python3-dev"
-    
-    # Add AppArmor if available
-    packages="$packages apparmor-utils apparmor-profiles python3-apparmor"
-
-    log_info "Installing packages: $packages"
-    if ! apt-get install -y $packages; then
-        log_error "Failed to install dependencies."
-        exit 1
-    fi
-    
-    log_success "Dependencies installed successfully."
-}
-
-################################################################################
-# Feature Deployment
-################################################################################
-
-deploy_core_features() {
-    log_section "Deploying OnionSite-Aegis Core Features"
-    deploy_tor_module
-    deploy_security_module
-    deploy_monitoring_module
-}
-
-deploy_tor_module() {
-    log_section "Configuring Tor"
-
-    # CRITICAL FIX: Unmask services that might be blocked
-    systemctl unmask tor@default.service 2>/dev/null || true
-    systemctl unmask tor.service 2>/dev/null || true
-    systemctl stop tor
-
-    # Configure Torrc
-    local tor_config="/etc/tor/torrc"
-    log_info "Writing Tor configuration..."
-    
-    cat > "$tor_config" <<EOF
-############### OnionSite-Aegis Config ###############
+# Write Tor Config
+cat > /etc/tor/torrc <<EOF
 DataDirectory /var/lib/tor
-HiddenServiceDir $TOR_HS_DIR
+HiddenServiceDir $HS_DIR
 HiddenServicePort 80 127.0.0.1:80
-# Security Hardening
-Sandbox 1
 RunAsDaemon 1
+Sandbox 1
+NoExec 1
 EOF
 
-    # FIX: Create Hidden Service Dir with CORRECT permissions
-    if [ ! -d "$TOR_HS_DIR" ]; then
-        log_info "Creating Hidden Service Directory..."
-        mkdir -p "$TOR_HS_DIR"
-    fi
+# PERMISSION FIX
+mkdir -p "$HS_DIR"
+chown -R debian-tor:debian-tor "$TOR_DIR"
+chmod 700 "$TOR_DIR"
+chmod 700 "$HS_DIR"
+success "Tor permissions secured."
 
-    # CRITICAL FIX: Ensure 'debian-tor' owns the directory with 700 perms
-    log_info "Fixing Tor permissions..."
-    chown -R debian-tor:debian-tor "$TOR_HS_DIR"
-    chmod 700 "$TOR_HS_DIR"
+# 7. NGINX CONFIGURATION (WITH FALLBACK)
+# ------------------------------------------------------------------------------
+log "Configuring Nginx..."
+rm -f /etc/nginx/sites-enabled/default
+rm -f /etc/nginx/sites-enabled/onion*
+
+# Download WAF Rules
+mkdir -p "$NGINX_MODSEC_DIR"
+if [ ! -f "$NGINX_MODSEC_DIR/modsecurity.conf" ]; then
+    wget -q https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended -O "$NGINX_MODSEC_DIR/modsecurity.conf"
+    sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' "$NGINX_MODSEC_DIR/modsecurity.conf"
+fi
+if [ ! -f "$NGINX_MODSEC_DIR/unicode.mapping" ]; then
+    wget -q https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/unicode.mapping -O "$NGINX_MODSEC_DIR/unicode.mapping"
+fi
+echo "include $NGINX_MODSEC_DIR/modsecurity.conf" > "$NGINX_MODSEC_DIR/main.conf"
+
+# Create Web Page
+mkdir -p "$WEB_DIR"
+cat > "$WEB_DIR/index.html" <<EOF
+<!DOCTYPE html><html><head><title>AEGIS SECURE</title>
+<style>body{background:#000;color:#0f0;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh;}</style>
+</head><body><h1>AEGIS SECURE</h1><p>Status: ONLINE</p></body></html>
+EOF
+chown -R www-data:www-data "$WEB_DIR"
+chmod 755 "$WEB_DIR"
+
+# GENERATE SERVER BLOCK
+cat > /etc/nginx/sites-available/aegis_onion <<EOF
+server {
+    listen 127.0.0.1:80;
+    server_name localhost;
+    root $WEB_DIR;
+    index index.html;
     
-    # Also fix parent dir just in case
-    chown debian-tor:debian-tor /var/lib/tor
-    chmod 700 /var/lib/tor
-
-    log_success "Tor configured and permissions fixed."
+    # WAF SETTINGS (May be disabled by script if crash detected)
+    modsecurity on;
+    modsecurity_rules_file $NGINX_MODSEC_DIR/main.conf;
+    
+    server_tokens off;
+    add_header X-Frame-Options DENY;
+    
+    location / { try_files \$uri \$uri/ =404; }
 }
+EOF
+ln -sf /etc/nginx/sites-available/aegis_onion /etc/nginx/sites-enabled/
 
-deploy_security_module() {
-    log_section "Configuring Security (Firewall & Hardening)"
-
-    # Only basic placeholder firewall to ensure we don't lock ourselves out again
-    # Real hardening should happen after successful deployment
-    
-    if command -v nft &> /dev/null; then
-        log_info "Initializing NFTables (Safe Mode)..."
-        # Create a simple ruleset that allows everything for now
-        # You can replace this with your strict rules later
-        nft add table inet filter 2>/dev/null || true
-        nft add chain inet filter input { type filter hook input priority 0 \; } 2>/dev/null || true
-        log_success "Firewall initialized."
-    fi
+# 8. FIREWALL (NFTABLES)
+# ------------------------------------------------------------------------------
+log "Applying Firewall..."
+cat > /etc/nftables.conf <<EOF
+flush ruleset
+table inet filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+        iif "lo" accept
+        ct state established,related accept
+        tcp dport 22 accept
+        ip protocol icmp accept
+    }
+    chain forward { type filter hook forward priority 0; policy drop; }
+    chain output { type filter hook output priority 0; policy accept; }
 }
+EOF
+if nft -f /etc/nftables.conf 2>/dev/null; then
+    systemctl enable nftables >/dev/null 2>&1
+    success "Firewall Active."
+else
+    warn "Firewall skipped (Kernel restricted)."
+fi
 
-deploy_monitoring_module() {
-    log_section "Setting up Monitoring"
+# 9. STARTUP & AUTO-HEALING
+# ------------------------------------------------------------------------------
+log "Starting Services..."
+systemctl daemon-reload
+
+# Start Tor (Wait for Keys)
+log "Bootstrapping Tor..."
+systemctl restart tor@default
+COUNT=0
+while [ ! -f "$HS_DIR/hostname" ]; do
+    if [ $COUNT -gt 20 ]; then
+        warn "Tor keys slow. Retrying..."
+        chown -R debian-tor:debian-tor "$TOR_DIR"
+        systemctl restart tor@default
+        sleep 5
+    fi
+    sleep 2
+    COUNT=$((COUNT+1))
+done
+
+# Start Nginx (WITH AUTO-HEAL)
+log "Starting Nginx..."
+if ! systemctl restart nginx; then
+    echo -e "${RED}[!] Nginx WAF crash detected. Falling back to Safe Mode...${NC}"
+    # Print real error for log
+    nginx -t || true
+    # Disable ModSecurity in config
+    sed -i 's/modsecurity on;/#modsecurity on;/g' /etc/nginx/sites-available/aegis_onion
+    sed -i 's/modsecurity_rules_file/#modsecurity_rules_file/g' /etc/nginx/sites-available/aegis_onion
     
-    # FIX: Check if source files exist before copying
-    if [[ -f "${SCRIPT_DIR}/core/init_ram_logs.sh" ]]; then
-        cp "${SCRIPT_DIR}/core/init_ram_logs.sh" "${DEPLOYMENT_DIR}/core/"
-        chmod +x "${DEPLOYMENT_DIR}/core/init_ram_logs.sh"
-        log_success "RAM logging script deployed."
+    # Retry start
+    if systemctl restart nginx; then
+        warn "Nginx started in SAFE MODE (WAF Disabled due to incompatibility)."
     else
-        log_warning "init_ram_logs.sh not found in source directory. Skipping."
+        echo -e "${RED}[CRITICAL] Nginx failed even in Safe Mode.${NC}"
+        journalctl -xeu nginx --no-pager | tail -n 20
+        exit 1
     fi
-}
+else
+    success "Nginx started with WAF ACTIVE."
+fi
 
-################################################################################
-# Finalization & Service Start
-################################################################################
-
-start_services() {
-    log_section "Starting Services"
-    
-    systemctl daemon-reload
-    
-    log_info "Starting Tor..."
-    if ! systemctl restart tor; then
-        log_error "Tor failed to start. Checking logs..."
-        journalctl -xeu tor --no-pager | tail -n 10
-        return 1
-    fi
-    
-    log_info "Starting Nginx..."
-    systemctl restart nginx || log_warning "Nginx failed to start."
-
-    # Validate Tor Config
-    log_info "Verifying Tor Configuration..."
-    if sudo -u debian-tor tor --verify-config; then
-        log_success "Tor configuration is VALID."
-    else
-        log_error "Tor configuration is INVALID."
-    fi
-}
-
-################################################################################
-# Main Execution
-################################################################################
-
-main() {
-    log_section "OnionSite-Aegis Installation Started"
-    
-    # Pre-flight
-    check_sudo_root_execution
-    check_system_requirements
-    
-    # Install
-    install_dependencies
-    fix_permissions
-    deploy_core_features
-    
-    # Start
-    start_services
-    
-    log_section "Installation Completed"
-    
-    if [ -f "$TOR_HS_DIR/hostname" ]; then
-        local onion_url=$(cat "$TOR_HS_DIR/hostname")
-        echo -e "${GREEN}Your Onion Address: ${onion_url}${NC}"
-    else
-        echo -e "${YELLOW}Onion address not generated yet. Please wait a few seconds and run:${NC}"
-        echo "cat $TOR_HS_DIR/hostname"
-    fi
-    
-    echo ""
-    echo "To view logs: cat ${LOG_FILE}"
-}
-
-# Run Main
-main "$@"
+# 10. COMPLETION
+# ------------------------------------------------------------------------------
+echo ""
+echo "================================================================"
+if [ -f "$HS_DIR/hostname" ]; then
+    ONION=$(cat "$HS_DIR/hostname")
+    success "Tor Network: CONNECTED"
+    echo -e "${GREEN}>>> YOUR ONION ADDRESS: ${ONION} <<<${NC}"
+else
+    echo -e "${RED}[FAIL] Onion address missing.${NC}"
+fi
+echo "================================================================"
