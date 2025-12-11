@@ -1,96 +1,113 @@
 #!/bin/bash
 
 ################################################################################
-# OnionSite-Aegis: Ultimate Production Installer
-# Version: 3.2 (Self-Healing / Fallback Mode)
-# Target: Debian 12/13 & Ubuntu 22.04+
-# Fixes: Nginx WAF crashes, Service masking, Permissions
+# OnionSite-Aegis: Ultimate Master Installer
+# Version: 5.1 (Double-Fallback Mode)
+# Fixes: Handles Lua & WAF crashes automatically
 ################################################################################
 
-# 1. ROBUST ERROR HANDLING
+# 1. INITIAL CONFIGURATION
 # ------------------------------------------------------------------------------
 set -e
 set -o pipefail
-# Trap errors to show the exact line number where it failed
-trap 'echo -e "\n\033[0;31m[CRITICAL FAILURE] Script stopped at line $LINENO. Please check logs.\033[0m"; exit 1' ERR
+# Custom Trap to print Nginx error if we fail near the end
+trap 'echo -e "\n\033[0;31m[CRITICAL FAILURE] Script stopped at line $LINENO. Running diagnostics...\033[0m"; nginx -t; exit 1' ERR
 
-# 2. CONFIGURATION
-# ------------------------------------------------------------------------------
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
+# Paths
+INSTALL_DIR=$(pwd)
+CORE_DIR="$INSTALL_DIR/core"
+CONF_DIR="$INSTALL_DIR/conf"
 LOG_FILE="/var/log/aegis_install.log"
 TOR_DIR="/var/lib/tor"
 HS_DIR="$TOR_DIR/hidden_service"
 WEB_DIR="/var/www/onionsite"
 NGINX_MODSEC_DIR="/etc/nginx/modsec"
+LUA_DIR="/etc/nginx/lua"
+
+# Tracking Flags
+FAIL_WAF=0
+FAIL_LUA=0
+FAIL_FIREWALL=0
 
 log() { echo -e "${BLUE}[INFO]${NC} $1" | tee -a "$LOG_FILE"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1" | tee -a "$LOG_FILE"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1" | tee -a "$LOG_FILE"; }
 
-# 3. PRE-FLIGHT CHECKS
+# 2. PRE-FLIGHT CHECKS & WIPE LOGIC
 # ------------------------------------------------------------------------------
 clear
-echo -e "${GREEN}=== STARTING AEGIS DEPLOYMENT v3.2 ===${NC}"
+echo -e "${GREEN}=== STARTING AEGIS SUITE DEPLOYMENT v5.1 ===${NC}"
 
 if [[ $EUID -ne 0 ]]; then
    echo -e "${RED}[!] Must be run as root.${NC}"
    exit 1
 fi
 
-# SELF-HEALING: Unlock network
-if command -v nft &> /dev/null; then nft flush ruleset 2>/dev/null || true; fi
-if command -v iptables &> /dev/null; then iptables -F 2>/dev/null || true; fi
-
-# SYSTEM CLOCK (Container Safe)
-if timedatectl set-ntp true 2>/dev/null; then
-    success "Time sync active."
-else
-    warn "NTP not supported (Container/VPS). Skipping."
+if [ ! -d "$CORE_DIR" ]; then
+    echo -e "${RED}[ERROR] 'core/' directory not found. Please run inside the OnionSite-Aegis folder.${NC}"
+    exit 1
 fi
 
-# 4. DEPENDENCIES
+# --- WIPE LOGIC ---
+if [ -d "$HS_DIR" ]; then
+    echo ""
+    echo -e "${YELLOW}[!] EXISTING INSTALLATION DETECTED ${NC}"
+    echo "Do you want to WIPE the old keys and generate a NEW Onion Address?"
+    read -p "Type 'wipe' to delete, or press ENTER to update in-place: " WIPE_CONFIRM
+
+    if [[ "$WIPE_CONFIRM" == "wipe" ]]; then
+        log "Wiping system..."
+        systemctl stop tor nginx aegis-sentry 2>/dev/null || true
+        rm -rf "$HS_DIR" "$WEB_DIR"
+        rm -f /etc/nginx/sites-enabled/aegis_onion
+        success "System Wiped. New identity will be generated."
+    fi
+fi
+
+# 3. DEPENDENCIES & KERNEL
 # ------------------------------------------------------------------------------
-log "Installing Dependencies..."
+log "Installing System Dependencies..."
 apt-get update -q
-DEPS="curl wget git build-essential tor nginx nftables \
-python3-pip python3-stem python3-inotify python3-requests \
-apparmor-utils apparmor-profiles python3-apparmor \
-libmodsecurity3 libnginx-mod-http-modsecurity"
+DEPS="curl wget tor nginx nftables python3-pip python3-stem python3-inotify \
+libnginx-mod-http-lua libmodsecurity3 libnginx-mod-http-modsecurity \
+apparmor-utils"
 
 apt-get install -y --no-install-recommends $DEPS
 success "Dependencies installed."
 
-# 5. KERNEL HARDENING
-# ------------------------------------------------------------------------------
-log "Applying Kernel Security..."
+# Python Deps
+if [ -f "$CORE_DIR/neural_sentry.py" ]; then
+    pip3 install requests psutil --break-system-packages 2>/dev/null || true
+fi
+
+# Kernel Hardening
 cat > /etc/sysctl.d/99-aegis.conf <<EOF
 net.ipv4.conf.all.rp_filter = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 net.ipv4.tcp_syncookies = 1
+kernel.dmesg_restrict = 1
 EOF
-if sysctl --system >/dev/null 2>&1; then
-    success "Kernel hardened."
-else
-    warn "Kernel hardening skipped (Container)."
+sysctl --system >/dev/null 2>&1 || warn "Kernel hardening limited."
+
+# 4. CORE MODULE: RAM LOGS
+# ------------------------------------------------------------------------------
+if [ -f "$CORE_DIR/init_ram_logs.sh" ]; then
+    chmod +x "$CORE_DIR/init_ram_logs.sh"
+    "$CORE_DIR/init_ram_logs.sh"
 fi
 
-# 6. TOR CONFIGURATION
+# 5. TOR CONFIGURATION
 # ------------------------------------------------------------------------------
 log "Configuring Tor..."
-systemctl unmask tor.service tor@default.service >/dev/null 2>&1 || true
-systemctl stop tor >/dev/null 2>&1 || true
-
-# Backup config
-if [ -f /etc/tor/torrc ] && [ ! -f /etc/tor/torrc.bak ]; then
-    cp /etc/tor/torrc /etc/tor/torrc.bak
-fi
-
-# Write Tor Config
+systemctl stop tor 2>/dev/null || true
 cat > /etc/tor/torrc <<EOF
 DataDirectory /var/lib/tor
 HiddenServiceDir $HS_DIR
@@ -99,136 +116,168 @@ RunAsDaemon 1
 Sandbox 1
 NoExec 1
 EOF
-
-# PERMISSION FIX
 mkdir -p "$HS_DIR"
 chown -R debian-tor:debian-tor "$TOR_DIR"
 chmod 700 "$TOR_DIR"
 chmod 700 "$HS_DIR"
-success "Tor permissions secured."
 
-# 7. NGINX CONFIGURATION (WITH FALLBACK)
+# 6. NGINX, LUA & WAF
 # ------------------------------------------------------------------------------
-log "Configuring Nginx..."
-rm -f /etc/nginx/sites-enabled/default
-rm -f /etc/nginx/sites-enabled/onion*
+log "Configuring Nginx Suite..."
 
-# Download WAF Rules
+# A. Lua
+mkdir -p "$LUA_DIR"
+if [ -f "$CORE_DIR/response_padding.lua" ]; then
+    cp "$CORE_DIR/response_padding.lua" "$LUA_DIR/response_padding.lua"
+    LUA_CONFIG="rewrite_by_lua_file $LUA_DIR/response_padding.lua;"
+else
+    LUA_CONFIG="# Lua script missing"
+fi
+
+# B. WAF
 mkdir -p "$NGINX_MODSEC_DIR"
 if [ ! -f "$NGINX_MODSEC_DIR/modsecurity.conf" ]; then
     wget -q https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended -O "$NGINX_MODSEC_DIR/modsecurity.conf"
     sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' "$NGINX_MODSEC_DIR/modsecurity.conf"
 fi
-if [ ! -f "$NGINX_MODSEC_DIR/unicode.mapping" ]; then
-    wget -q https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/unicode.mapping -O "$NGINX_MODSEC_DIR/unicode.mapping"
-fi
 echo "include $NGINX_MODSEC_DIR/modsecurity.conf" > "$NGINX_MODSEC_DIR/main.conf"
 
-# Create Web Page
-mkdir -p "$WEB_DIR"
-cat > "$WEB_DIR/index.html" <<EOF
-<!DOCTYPE html><html><head><title>AEGIS SECURE</title>
-<style>body{background:#000;color:#0f0;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh;}</style>
-</head><body><h1>AEGIS SECURE</h1><p>Status: ONLINE</p></body></html>
+# C. Content
+if [ ! -f "$WEB_DIR/index.html" ]; then
+    echo ""
+    echo -e "${CYAN}--- CUSTOMIZE SITE ---${NC}"
+    read -p "1. Page Title [Default: Secure Onion]: " USER_TITLE
+    USER_TITLE=${USER_TITLE:-"Secure Onion"}
+    read -p "2. Headline [Default: Welcome]: " USER_H1
+    USER_H1=${USER_H1:-"Welcome"}
+    read -p "3. Message [Default: Connection Secure]: " USER_MSG
+    USER_MSG=${USER_MSG:-"Connection Secure."}
+
+    mkdir -p "$WEB_DIR"
+    cat > "$WEB_DIR/index.html" <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${USER_TITLE}</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background-color: #0d1117; color: #00ff00; text-align: center; margin-top: 100px; }
+        h1 { border-bottom: 1px solid #333; display: inline-block; padding-bottom: 10px; }
+        .footer { margin-top: 50px; font-size: 0.8em; color: #555; }
+    </style>
+</head>
+<body>
+    <h1>${USER_H1}</h1>
+    <p>${USER_MSG}</p>
+    <div class="footer">Protected by Aegis v5.1</div>
+</body>
+</html>
 EOF
+fi
 chown -R www-data:www-data "$WEB_DIR"
 chmod 755 "$WEB_DIR"
 
-# GENERATE SERVER BLOCK
+# D. Server Block
 cat > /etc/nginx/sites-available/aegis_onion <<EOF
 server {
     listen 127.0.0.1:80;
     server_name localhost;
     root $WEB_DIR;
     index index.html;
-    
-    # WAF SETTINGS (May be disabled by script if crash detected)
-    modsecurity on;
-    modsecurity_rules_file $NGINX_MODSEC_DIR/main.conf;
-    
     server_tokens off;
     add_header X-Frame-Options DENY;
-    
+
+    modsecurity on;
+    modsecurity_rules_file $NGINX_MODSEC_DIR/main.conf;
+
+    $LUA_CONFIG
+
     location / { try_files \$uri \$uri/ =404; }
 }
 EOF
+rm -f /etc/nginx/sites-enabled/default
 ln -sf /etc/nginx/sites-available/aegis_onion /etc/nginx/sites-enabled/
 
-# 8. FIREWALL (NFTABLES)
+# 7. SERVICES
 # ------------------------------------------------------------------------------
-log "Applying Firewall..."
+if [ -f "$CORE_DIR/neural_sentry.py" ]; then
+    cp "$CORE_DIR/neural_sentry.py" /usr/local/bin/aegis-sentry
+    chmod +x /usr/local/bin/aegis-sentry
+    cat > /etc/systemd/system/aegis-sentry.service <<EOF
+[Unit]
+Description=Aegis Neural Sentry
+After=network.target nginx.service
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/aegis-sentry
+Restart=always
+User=root
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable aegis-sentry
+    systemctl start aegis-sentry
+fi
+
+# 8. FIREWALL
+# ------------------------------------------------------------------------------
 cat > /etc/nftables.conf <<EOF
 flush ruleset
 table inet filter {
-    chain input {
-        type filter hook input priority 0; policy drop;
-        iif "lo" accept
-        ct state established,related accept
-        tcp dport 22 accept
-        ip protocol icmp accept
-    }
+    chain input { type filter hook input priority 0; policy drop; iif "lo" accept; ct state established,related accept; tcp dport 22 accept; }
     chain forward { type filter hook forward priority 0; policy drop; }
     chain output { type filter hook output priority 0; policy accept; }
 }
 EOF
-if nft -f /etc/nftables.conf 2>/dev/null; then
-    systemctl enable nftables >/dev/null 2>&1
-    success "Firewall Active."
-else
-    warn "Firewall skipped (Kernel restricted)."
-fi
+nft -f /etc/nftables.conf 2>/dev/null || FAIL_FIREWALL=1
 
-# 9. STARTUP & AUTO-HEALING
+# 9. BOOTSTRAP (ROBUST MODE)
 # ------------------------------------------------------------------------------
-log "Starting Services..."
-systemctl daemon-reload
-
-# Start Tor (Wait for Keys)
-log "Bootstrapping Tor..."
+log "Bootstrapping..."
 systemctl restart tor@default
 COUNT=0
 while [ ! -f "$HS_DIR/hostname" ]; do
-    if [ $COUNT -gt 20 ]; then
-        warn "Tor keys slow. Retrying..."
-        chown -R debian-tor:debian-tor "$TOR_DIR"
-        systemctl restart tor@default
-        sleep 5
-    fi
     sleep 2
     COUNT=$((COUNT+1))
+    if [ $COUNT -gt 25 ]; then systemctl restart tor@default; sleep 5; fi
 done
 
-# Start Nginx (WITH AUTO-HEAL)
 log "Starting Nginx..."
+# ATTEMPT 1: Normal Start
 if ! systemctl restart nginx; then
-    echo -e "${RED}[!] Nginx WAF crash detected. Falling back to Safe Mode...${NC}"
-    # Print real error for log
-    nginx -t || true
-    # Disable ModSecurity in config
+    warn "Start failed. Trying WAF-Safe Mode..."
+    FAIL_WAF=1
     sed -i 's/modsecurity on;/#modsecurity on;/g' /etc/nginx/sites-available/aegis_onion
     sed -i 's/modsecurity_rules_file/#modsecurity_rules_file/g' /etc/nginx/sites-available/aegis_onion
     
-    # Retry start
-    if systemctl restart nginx; then
-        warn "Nginx started in SAFE MODE (WAF Disabled due to incompatibility)."
-    else
-        echo -e "${RED}[CRITICAL] Nginx failed even in Safe Mode.${NC}"
-        journalctl -xeu nginx --no-pager | tail -n 20
-        exit 1
+    # ATTEMPT 2: WAF Disabled
+    if ! systemctl restart nginx; then
+        warn "Start failed again. Trying Lua-Safe Mode..."
+        FAIL_LUA=1
+        sed -i 's/rewrite_by_lua_file/#rewrite_by_lua_file/g' /etc/nginx/sites-available/aegis_onion
+        
+        # ATTEMPT 3: All Modules Disabled
+        if ! systemctl restart nginx; then
+            echo -e "${RED}[CRITICAL] Nginx failed in ALL modes.${NC}"
+            nginx -t
+            exit 1
+        fi
     fi
-else
-    success "Nginx started with WAF ACTIVE."
 fi
 
 # 10. COMPLETION
 # ------------------------------------------------------------------------------
+# Create edit shortcut
+echo -e '#!/bin/bash\nnano /var/www/onionsite/index.html\nchown -R www-data:www-data /var/www/onionsite\nsystemctl reload nginx' > /usr/local/bin/aegis-edit
+chmod +x /usr/local/bin/aegis-edit
+
+ONION=$(cat "$HS_DIR/hostname")
 echo ""
 echo "================================================================"
-if [ -f "$HS_DIR/hostname" ]; then
-    ONION=$(cat "$HS_DIR/hostname")
-    success "Tor Network: CONNECTED"
-    echo -e "${GREEN}>>> YOUR ONION ADDRESS: ${ONION} <<<${NC}"
-else
-    echo -e "${RED}[FAIL] Onion address missing.${NC}"
-fi
+echo -e "${GREEN}>>> LIVE: ${ONION} <<<${NC}"
+echo "----------------------------------------------------------------"
+[ $FAIL_WAF -eq 0 ] && echo -e " [OK] WAF" || echo -e " [OFF] WAF (Failed)"
+[ $FAIL_LUA -eq 0 ] && echo -e " [OK] Lua" || echo -e " [OFF] Lua (Failed)"
+[ $FAIL_FIREWALL -eq 0 ] && echo -e " [OK] Firewall" || echo -e " [OFF] Firewall (Restricted)"
+echo "----------------------------------------------------------------"
+echo -e "${CYAN}Edit site with:${NC} aegis-edit"
 echo "================================================================"
