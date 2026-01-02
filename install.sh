@@ -28,7 +28,7 @@ CONF_DIR="$INSTALL_DIR/conf"
 LOG_FILE="/var/log/aegis_install.log"
 TOR_DIR="/var/lib/tor"
 HS_DIR="$TOR_DIR/hidden_service"
-WEB_DIR="/var/www/onionsite"
+WEB_DIR="/var/www/onion_site"
 NGINX_MODSEC_DIR="/etc/nginx/modsec"
 LUA_DIR="/etc/nginx/lua"
 
@@ -40,6 +40,7 @@ FAIL_FIREWALL=0
 log() { echo -e "${BLUE}[INFO]${NC} $1" | tee -a "$LOG_FILE"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1" | tee -a "$LOG_FILE"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1" | tee -a "$LOG_FILE"; }
+error() { echo -e "${RED}[ERROR]${NC} $1" | tee -a "$LOG_FILE"; }
 
 # 2. PRE-FLIGHT CHECKS & WIPE LOGIC
 # ------------------------------------------------------------------------------
@@ -65,9 +66,9 @@ if [ -d "$HS_DIR" ]; then
 
     if [[ "$WIPE_CONFIRM" == "wipe" ]]; then
         log "Wiping system..."
-        systemctl stop tor nginx aegis-sentry 2>/dev/null || true
+        systemctl stop tor nginx neural-sentry 2>/dev/null || true
         rm -rf "$HS_DIR" "$WEB_DIR"
-        rm -f /etc/nginx/sites-enabled/aegis_onion
+        rm -f /etc/nginx/sites-enabled/onion_site
         success "System Wiped. New identity will be generated."
     fi
 fi
@@ -89,12 +90,18 @@ if [ -f "$CORE_DIR/neural_sentry.py" ]; then
 fi
 
 # Kernel Hardening
-cat > /etc/sysctl.d/99-aegis.conf <<EOF
+if [ -f "$CONF_DIR/sysctl_hardened.conf" ]; then
+    cp "$CONF_DIR/sysctl_hardened.conf" /etc/sysctl.d/99-aegis.conf
+    success "Using enhanced sysctl configuration"
+else
+    warn "Enhanced sysctl config not found, using minimal configuration"
+    cat > /etc/sysctl.d/99-aegis.conf <<EOF
 net.ipv4.conf.all.rp_filter = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 net.ipv4.tcp_syncookies = 1
 kernel.dmesg_restrict = 1
 EOF
+fi
 sysctl --system >/dev/null 2>&1 || warn "Kernel hardening limited."
 
 # 4. CORE MODULE: RAM LOGS
@@ -110,11 +117,67 @@ log "Configuring Tor..."
 systemctl stop tor 2>/dev/null || true
 cat > /etc/tor/torrc <<EOF
 DataDirectory /var/lib/tor
-HiddenServiceDir $HS_DIR
-HiddenServicePort 80 127.0.0.1:80
+PidFile /run/tor/tor.pid
 RunAsDaemon 1
+User debian-tor
+
+# Control Port for Neural Sentry
+ControlPort 127.0.0.1:9051
+CookieAuthentication 1
+
+# Hidden Service
+HiddenServiceDir $HS_DIR
+HiddenServiceVersion 3
+HiddenServicePort 80 127.0.0.1:80
+
+# Privacy & Security Hardening
 Sandbox 1
 NoExec 1
+HardwareAccel 1
+SafeLogging 1
+AvoidDiskWrites 1
+
+# Enhanced Privacy Settings
+DisableDebuggerAttachment 1
+SafeSocks 1
+WarnUnsafeSocks 0
+TestSocks 1
+CircuitBuildTimeout 10
+KeepalivePeriod 60
+NewCircuitPeriod 30
+MaxCircuitDirtiness 600
+MaxClientCircuitsPending 32
+
+# Connection Privacy (Maximum)
+ConnectionPadding 1
+ReducedConnectionPadding 0
+CircuitPadding 1
+PaddingDistribution piatkowski
+
+# Guard Node Privacy (Enhanced)
+UseEntryGuards 1
+NumEntryGuards 3
+GuardLifetime 30 days
+NumDirectoryGuards 3
+EntryNodes {}
+StrictEntryNodes 0
+
+# Exit Node Restrictions
+ExitNodes {}
+ExcludeNodes {}
+StrictNodes 0
+
+# Additional Privacy Settings
+PublishServerDescriptor 0
+ClientOnly 1
+FetchDirInfoEarly 0
+FetchUselessDescriptors 0
+LearnCircuitBuildTimeout 0
+
+# Logging Privacy (minimal)
+Log notice file /mnt/ram_logs/tor/tor.log
+SafeLogging 1
+AvoidDiskWrites 1
 EOF
 mkdir -p "$HS_DIR"
 chown -R debian-tor:debian-tor "$TOR_DIR"
@@ -177,7 +240,7 @@ chown -R www-data:www-data "$WEB_DIR"
 chmod 755 "$WEB_DIR"
 
 # D. Server Block
-cat > /etc/nginx/sites-available/aegis_onion <<EOF
+cat > /etc/nginx/sites-available/onion_site <<EOF
 server {
     listen 127.0.0.1:80;
     server_name localhost;
@@ -195,32 +258,75 @@ server {
 }
 EOF
 rm -f /etc/nginx/sites-enabled/default
-ln -sf /etc/nginx/sites-available/aegis_onion /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/onion_site /etc/nginx/sites-enabled/
 
 # 7. SERVICES
 # ------------------------------------------------------------------------------
+# Neural Sentry
 if [ -f "$CORE_DIR/neural_sentry.py" ]; then
-    cp "$CORE_DIR/neural_sentry.py" /usr/local/bin/aegis-sentry
-    chmod +x /usr/local/bin/aegis-sentry
-    cat > /etc/systemd/system/aegis-sentry.service <<EOF
+    cp "$CORE_DIR/neural_sentry.py" /usr/local/bin/neural_sentry.py
+    chmod +x /usr/local/bin/neural_sentry.py
+    cat > /etc/systemd/system/neural-sentry.service <<EOF
 [Unit]
-Description=Aegis Neural Sentry
-After=network.target nginx.service
+Description=Neural Sentry - Privacy-Focused Active Defense
+After=network.target tor.service
 [Service]
-ExecStart=/usr/bin/python3 /usr/local/bin/aegis-sentry
+ExecStart=/usr/bin/python3 /usr/local/bin/neural_sentry.py
 Restart=always
+RestartSec=10
 User=root
 [Install]
 WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
-    systemctl enable aegis-sentry
-    systemctl start aegis-sentry
+    systemctl enable neural-sentry
+    systemctl start neural-sentry
+    success "Neural Sentry service installed and started"
+fi
+
+# Privacy Monitor
+if [ -f "$CORE_DIR/privacy_monitor.sh" ]; then
+    cp "$CORE_DIR/privacy_monitor.sh" /usr/local/bin/privacy_monitor.sh
+    chmod +x /usr/local/bin/privacy_monitor.sh
+    cat > /etc/systemd/system/privacy-monitor.service <<EOF
+[Unit]
+Description=Privacy Monitor - Privacy Compliance Checker
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/privacy_monitor.sh
+User=root
+EOF
+    cat > /etc/systemd/system/privacy-monitor.timer <<EOF
+[Unit]
+Description=Privacy Monitor Timer (runs every 6 hours)
+[Timer]
+OnBootSec=1h
+OnUnitActiveSec=6h
+[Install]
+WantedBy=timers.target
+EOF
+    systemctl daemon-reload
+    systemctl enable privacy-monitor.timer
+    systemctl start privacy-monitor.timer
+    success "Privacy Monitor timer installed"
+fi
+
+# Traffic Analysis Protection
+if [ -f "$CORE_DIR/traffic_analysis_protection.sh" ]; then
+    cp "$CORE_DIR/traffic_analysis_protection.sh" /usr/local/bin/traffic_analysis_protection.sh
+    chmod +x /usr/local/bin/traffic_analysis_protection.sh
+    /usr/local/bin/traffic_analysis_protection.sh || warn "Traffic analysis protection setup had issues"
 fi
 
 # 8. FIREWALL
 # ------------------------------------------------------------------------------
-cat > /etc/nftables.conf <<EOF
+log "Configuring NFTables firewall..."
+if [ -f "$CONF_DIR/nftables.conf" ]; then
+    cp "$CONF_DIR/nftables.conf" /etc/nftables.conf
+    success "Using enhanced NFTables configuration"
+else
+    warn "Enhanced firewall config not found, using minimal configuration"
+    cat > /etc/nftables.conf <<EOF
 flush ruleset
 table inet filter {
     chain input { type filter hook input priority 0; policy drop; iif "lo" accept; ct state established,related accept; tcp dport 22 accept; }
@@ -228,32 +334,46 @@ table inet filter {
     chain output { type filter hook output priority 0; policy accept; }
 }
 EOF
+fi
 nft -f /etc/nftables.conf 2>/dev/null || FAIL_FIREWALL=1
+if [ $FAIL_FIREWALL -eq 0 ]; then
+    systemctl enable nftables 2>/dev/null || true
+    success "Firewall configured"
+fi
 
 # 9. BOOTSTRAP (ROBUST MODE)
 # ------------------------------------------------------------------------------
 log "Bootstrapping..."
-systemctl restart tor@default
+systemctl restart tor
 COUNT=0
 while [ ! -f "$HS_DIR/hostname" ]; do
     sleep 2
     COUNT=$((COUNT+1))
-    if [ $COUNT -gt 25 ]; then systemctl restart tor@default; sleep 5; fi
+    if [ $COUNT -gt 25 ]; then 
+        log "Tor taking longer than expected, restarting..."
+        systemctl restart tor
+        sleep 5
+    fi
+    if [ $COUNT -gt 50 ]; then
+        error "Tor failed to create hidden service after 100 seconds"
+        exit 1
+    fi
 done
+success "Hidden service created successfully"
 
 log "Starting Nginx..."
 # ATTEMPT 1: Normal Start
 if ! systemctl restart nginx; then
     warn "Start failed. Trying WAF-Safe Mode..."
     FAIL_WAF=1
-    sed -i 's/modsecurity on;/#modsecurity on;/g' /etc/nginx/sites-available/aegis_onion
-    sed -i 's/modsecurity_rules_file/#modsecurity_rules_file/g' /etc/nginx/sites-available/aegis_onion
+    sed -i 's/modsecurity on;/#modsecurity on;/g' /etc/nginx/sites-available/onion_site
+    sed -i 's/modsecurity_rules_file/#modsecurity_rules_file/g' /etc/nginx/sites-available/onion_site
     
     # ATTEMPT 2: WAF Disabled
     if ! systemctl restart nginx; then
         warn "Start failed again. Trying Lua-Safe Mode..."
         FAIL_LUA=1
-        sed -i 's/rewrite_by_lua_file/#rewrite_by_lua_file/g' /etc/nginx/sites-available/aegis_onion
+        sed -i 's/rewrite_by_lua_file/#rewrite_by_lua_file/g' /etc/nginx/sites-available/onion_site
         
         # ATTEMPT 3: All Modules Disabled
         if ! systemctl restart nginx; then
@@ -267,7 +387,12 @@ fi
 # 10. COMPLETION
 # ------------------------------------------------------------------------------
 # Create edit shortcut
-echo -e '#!/bin/bash\nnano /var/www/onionsite/index.html\nchown -R www-data:www-data /var/www/onionsite\nsystemctl reload nginx' > /usr/local/bin/aegis-edit
+cat > /usr/local/bin/aegis-edit <<'EDITEOF'
+#!/bin/bash
+nano /var/www/onion_site/index.html
+chown -R www-data:www-data /var/www/onion_site
+systemctl reload nginx
+EDITEOF
 chmod +x /usr/local/bin/aegis-edit
 
 ONION=$(cat "$HS_DIR/hostname")

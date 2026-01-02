@@ -29,6 +29,8 @@ chown debian-tor:debian-tor /var/log/tor 2>/dev/null || true
 rm -f /usr/local/bin/neural_sentry.py
 rm -f /usr/local/bin/privacy_log_sanitizer.py
 rm -f /usr/local/bin/privacy_monitor.sh
+rm -f /usr/local/bin/traffic_analysis_protection.sh
+rm -f /usr/local/bin/aegis-edit
 rm -f /usr/local/bin/init_ram_logs.sh
 
 # NOTE: /var/lib/tor/hidden_service/ is NOT deleted to preserve the onion service identity
