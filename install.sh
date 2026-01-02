@@ -8,10 +8,12 @@
 
 # 1. INITIAL CONFIGURATION
 # ------------------------------------------------------------------------------
-set -e
 set -o pipefail
 # Custom Trap to print Nginx error if we fail near the end
-trap 'echo -e "\n\033[0;31m[CRITICAL FAILURE] Script stopped at line $LINENO. Running diagnostics...\033[0m"; nginx -t; exit 1' ERR
+trap 'echo -e "\n\033[0;31m[CRITICAL FAILURE] Script stopped at line $LINENO. Running diagnostics...\033[0m"; nginx -t 2>/dev/null || true; exit 1' ERR
+
+# Note: We don't use 'set -e' because we need to handle errors gracefully
+# in some sections (like optional module failures)
 
 # Colors
 RED='\033[0;31m'
@@ -192,7 +194,9 @@ log "Configuring Nginx Suite..."
 mkdir -p "$LUA_DIR"
 if [ -f "$CORE_DIR/response_padding.lua" ]; then
     cp "$CORE_DIR/response_padding.lua" "$LUA_DIR/response_padding.lua"
-    LUA_CONFIG="rewrite_by_lua_file $LUA_DIR/response_padding.lua;"
+    chmod 644 "$LUA_DIR/response_padding.lua"
+    # Use body_filter for response padding (runs after content is generated)
+    LUA_CONFIG="body_filter_by_lua_file $LUA_DIR/response_padding.lua;"
 else
     LUA_CONFIG="# Lua script missing"
 fi
@@ -257,12 +261,31 @@ server {
     location / { try_files \$uri \$uri/ =404; }
 }
 EOF
+
+# Test nginx configuration before enabling
+log "Testing Nginx configuration..."
+if ! nginx -t 2>/dev/null; then
+    warn "Nginx configuration test failed, attempting to fix..."
+    # Remove problematic directives and retest
+    sed -i 's/modsecurity on;/#modsecurity on;/g' /etc/nginx/sites-available/onion_site
+    sed -i 's/modsecurity_rules_file/#modsecurity_rules_file/g' /etc/nginx/sites-available/onion_site
+    sed -i 's/body_filter_by_lua_file/#body_filter_by_lua_file/g' /etc/nginx/sites-available/onion_site
+    if ! nginx -t 2>/dev/null; then
+        error "Nginx configuration is invalid even after removing optional modules"
+        nginx -t
+        exit 1
+    fi
+    FAIL_WAF=1
+    FAIL_LUA=1
+fi
+
 rm -f /etc/nginx/sites-enabled/default
 ln -sf /etc/nginx/sites-available/onion_site /etc/nginx/sites-enabled/
+success "Nginx configuration validated"
 
 # 7. SERVICES
 # ------------------------------------------------------------------------------
-# Neural Sentry
+# Neural Sentry (install but don't start yet - wait for Tor)
 if [ -f "$CORE_DIR/neural_sentry.py" ]; then
     cp "$CORE_DIR/neural_sentry.py" /usr/local/bin/neural_sentry.py
     chmod +x /usr/local/bin/neural_sentry.py
@@ -270,6 +293,7 @@ if [ -f "$CORE_DIR/neural_sentry.py" ]; then
 [Unit]
 Description=Neural Sentry - Privacy-Focused Active Defense
 After=network.target tor.service
+Requires=tor.service
 [Service]
 ExecStart=/usr/bin/python3 /usr/local/bin/neural_sentry.py
 Restart=always
@@ -280,8 +304,8 @@ WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
     systemctl enable neural-sentry
-    systemctl start neural-sentry
-    success "Neural Sentry service installed and started"
+    # Don't start yet - will start after Tor is confirmed running
+    success "Neural Sentry service installed (will start after Tor)"
 fi
 
 # Privacy Monitor
@@ -361,6 +385,18 @@ while [ ! -f "$HS_DIR/hostname" ]; do
 done
 success "Hidden service created successfully"
 
+# Now start Neural Sentry (Tor is confirmed running)
+if systemctl is-enabled neural-sentry >/dev/null 2>&1; then
+    log "Starting Neural Sentry..."
+    systemctl start neural-sentry || warn "Neural Sentry failed to start (may retry)"
+    sleep 2
+    if systemctl is-active --quiet neural-sentry; then
+        success "Neural Sentry started successfully"
+    else
+        warn "Neural Sentry is not running (check logs if needed)"
+    fi
+fi
+
 log "Starting Nginx..."
 # ATTEMPT 1: Normal Start
 if ! systemctl restart nginx; then
@@ -373,7 +409,7 @@ if ! systemctl restart nginx; then
     if ! systemctl restart nginx; then
         warn "Start failed again. Trying Lua-Safe Mode..."
         FAIL_LUA=1
-        sed -i 's/rewrite_by_lua_file/#rewrite_by_lua_file/g' /etc/nginx/sites-available/onion_site
+        sed -i 's/body_filter_by_lua_file/#body_filter_by_lua_file/g' /etc/nginx/sites-available/onion_site
         
         # ATTEMPT 3: All Modules Disabled
         if ! systemctl restart nginx; then

@@ -1,8 +1,7 @@
--- Response Padding Module for Nginx
+-- Response Padding Script for Nginx
 -- Prevents traffic analysis through response size correlation
--- Requires: nginx-lua module (lua-resty-core)
-
-local _M = {}
+-- Requires: nginx-lua module (libnginx-mod-http-lua)
+-- Usage: body_filter_by_lua_file /etc/nginx/lua/response_padding.lua;
 
 -- Configuration
 local PADDING_SIZES = {512, 1024, 2048, 4096, 8192}  -- Padding sizes in bytes
@@ -26,8 +25,8 @@ local function get_target_size()
     return PADDING_SIZES[math.random(#PADDING_SIZES)]
 end
 
--- Add padding to response
-function _M.add_padding()
+-- Main body filter function (called by nginx)
+local function add_padding()
     local body = ngx.arg[1]
     if not body then
         return
@@ -48,12 +47,13 @@ function _M.add_padding()
     end
 end
 
--- Add random delay (prevents timing correlation)
-function _M.add_delay()
+-- Add random delay (prevents timing correlation) - called in rewrite phase
+local function add_delay()
     math.randomseed(ngx.time() * 1000 + ngx.worker.id())
     local delay = math.random(10, 50)  -- 10-50ms random delay
     ngx.sleep(delay / 1000)  -- Convert to seconds
 end
 
-return _M
+-- Execute padding on body filter
+add_padding()
 
