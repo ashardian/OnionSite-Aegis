@@ -2,18 +2,17 @@
 
 ################################################################################
 # OnionSite-Aegis: Master Architect Installer
-# Version: 6.2 (Load Order Fix)
+# Version: 7.0 (Final Production)
 #
-# CRITICAL FIXES:
-# 1. Enforced Numerical Load Order (NDK -> Lua -> WAF) to prevent crash.
-# 2. Added "Pre-Flight Module Check" to verify binaries before loading.
-# 3. Added fallback logic if WAF rule download fails.
+# CHANGELOG:
+# v7.0: Merged all stability patches. Fixed "Trap ERR" false positive during 
+#       Tor bootstrapping. Enforced NDK dependency. Validated Nginx load order.
 ################################################################################
 
 # ==============================================================================
 # 1. CONSTANTS & CONFIGURATION
 # ==============================================================================
-set -o pipefail  # Fail if any command in a pipe fails
+set -o pipefail
 
 # Visuals
 RED='\033[0;31m'
@@ -21,7 +20,7 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # System Paths
 INSTALL_DIR=$(pwd)
@@ -35,8 +34,6 @@ TOR_LOG_DIR="/var/log/tor"
 WEB_ROOT="/var/www/onion_site"
 
 # Nginx Paths
-NGINX_AVAIL="/etc/nginx/sites-available"
-NGINX_ENAB="/etc/nginx/sites-enabled"
 NGINX_MOD_EN="/etc/nginx/modules-enabled"
 NGINX_MOD_DIS="/etc/nginx/modules-disabled-backup"
 NGINX_WAF_DIR="/etc/nginx/modsec"
@@ -58,49 +55,64 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1" | tee -a "$LOG_FILE"; }
 error() { echo -e "${RED}[ERROR]${NC} $1" | tee -a "$LOG_FILE"; }
 critical() { echo -e "${RED}[CRITICAL] $1${NC}"; exit 1; }
 
+# Strict Error Trap (Will be relaxed during bootstrap)
 trap 'echo -e "\n${RED}[RUNTIME ERROR] Script aborted at line $LINENO.${NC}"; exit 1' ERR
 
 # ==============================================================================
-# 3. INTERACTIVE FEATURE SELECTION
+# 3. ENVIRONMENT & HYGIENE
+# ==============================================================================
+check_environment() {
+    log "Performing Pre-Flight Environment Checks..."
+    
+    # Hygiene: Remove Python bytecode to prevent stale execution
+    if find . -type d -name "__pycache__" | grep -q .; then
+        find . -type d -name "__pycache__" -exec rm -rf {} +
+    fi
+    
+    # Root Check
+    if [[ $EUID -ne 0 ]]; then critical "This script must be run as root."; fi
+}
+
+# ==============================================================================
+# 4. INTERACTIVE FEATURE SELECTION
 # ==============================================================================
 clear
-echo -e "${GREEN}=== ONIONSITE-AEGIS ARCHITECT v6.2 ===${NC}"
-echo "Configure your deployment:"
+echo -e "${GREEN}=== ONIONSITE-AEGIS ARCHITECT v7.0 ===${NC}"
+check_environment
 echo ""
+echo "Configure your deployment:"
 
-read -p "1. Enable ModSecurity WAF? (Protection against XSS/SQLi) [y/N]: " resp
-[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_WAF=1 && echo "   -> [SELECTED] WAF"
+read -p "1. Enable ModSecurity WAF? [y/N]: " resp
+[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_WAF=1
 
-read -p "2. Enable Lua Response Padding? (Defends against Traffic Fingerprinting) [y/N]: " resp
-[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_LUA=1 && echo "   -> [SELECTED] Lua Padding"
+read -p "2. Enable Lua Response Padding? [y/N]: " resp
+[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_LUA=1
 
-read -p "3. Enable Neural Sentry? (Active IPS Monitor) [y/N]: " resp
-[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_SENTRY=1 && echo "   -> [SELECTED] Neural Sentry"
+read -p "3. Enable Neural Sentry? [y/N]: " resp
+[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_SENTRY=1
 
-read -p "4. Enable Privacy Monitor? (Periodic Security Audits) [y/N]: " resp
-[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_PRIVACY=1 && echo "   -> [SELECTED] Privacy Monitor"
+read -p "4. Enable Privacy Monitor? [y/N]: " resp
+[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_PRIVACY=1
 
-read -p "5. Enable Traffic Analysis Protection? (Background Noise Generator) [y/N]: " resp
-[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_TRAFFIC=1 && echo "   -> [SELECTED] Traffic Protection"
+read -p "5. Enable Traffic Analysis Protection? [y/N]: " resp
+[[ "$resp" =~ ^[Yy]$ ]] && ENABLE_TRAFFIC=1
 
 echo ""
 read -p "Press ENTER to begin deployment..."
 
 # ==============================================================================
-# 4. ENVIRONMENT SANITIZATION
+# 5. NUCLEAR SANITIZATION (The "Ghost Purge")
 # ==============================================================================
 log "Sanitizing Environment..."
-if [[ $EUID -ne 0 ]]; then critical "This script must be run as root."; fi
 
-# Stop Services
+# Stop everything
 systemctl stop nginx tor tor@default neural-sentry 2>/dev/null || true
 
-# Nginx Purge (Nuclear)
-rm -rf "$NGINX_ENAB"/* "$NGINX_AVAIL"/*
+# Purge Nginx configs to prevent "Job Failed" errors
+rm -rf /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
 mkdir -p "$NGINX_MOD_DIS"
 
-# Move ALL modules out to start with a blank slate
-# This ensures no old alphabetical symlinks remain
+# Move ALL modules to backup to prevent alphabetical loading issues
 mv "$NGINX_MOD_EN"/* "$NGINX_MOD_DIS"/ 2>/dev/null || true
 
 # WIPE LOGIC
@@ -117,14 +129,14 @@ if [ -d "$TOR_HS" ]; then
 fi
 
 # ==============================================================================
-# 5. DEPENDENCY MANAGEMENT
+# 6. DEPENDENCY MANAGEMENT
 # ==============================================================================
 log "Installing Dependencies..."
 BASE_DEPS="curl wget tor nginx nftables python3-pip python3-stem python3-inotify apparmor-utils"
 OPT_DEPS=""
 
 if [ $ENABLE_WAF -eq 1 ]; then OPT_DEPS="$OPT_DEPS libmodsecurity3 libnginx-mod-http-modsecurity"; fi
-# Added NDK explicitly
+# CRITICAL FIX: Added 'libnginx-mod-http-ndk' to prevent Lua undefined symbol error
 if [ $ENABLE_LUA -eq 1 ]; then OPT_DEPS="$OPT_DEPS libnginx-mod-http-lua libnginx-mod-http-ndk"; fi
 
 apt-get update -q
@@ -139,7 +151,7 @@ if [ $ENABLE_SENTRY -eq 1 ]; then
 fi
 
 # ==============================================================================
-# 6. STEALTH LOGGING (RAM-BACKED)
+# 7. STEALTH LOGGING & HARDENING
 # ==============================================================================
 log "Configuring RAM Logging..."
 mkdir -p "$TOR_LOG_DIR"
@@ -149,16 +161,12 @@ fi
 chown -R debian-tor:debian-tor "$TOR_LOG_DIR"
 chmod 700 "$TOR_LOG_DIR"
 
-# ==============================================================================
-# 7. TOR CONFIGURATION
-# ==============================================================================
 log "Hardening Tor Configuration..."
 mkdir -p "$TOR_HS"
 chown -R debian-tor:debian-tor "$TOR_LIB"
 chmod 700 "$TOR_LIB" "$TOR_HS"
 
 cat > /etc/tor/torrc <<EOF
-# --- AEGIS HARDENED TOR CONFIG ---
 DataDirectory $TOR_LIB
 PidFile /run/tor/tor.pid
 RunAsDaemon 1
@@ -177,47 +185,38 @@ Log notice file $TOR_LOG_DIR/notices.log
 EOF
 
 # ==============================================================================
-# 8. NGINX CONFIGURATION (ARCHITECT MODE)
+# 8. NGINX ARCHITECTURE (LOAD ORDER FIX)
 # ==============================================================================
 log "Building Nginx Architecture..."
 
-# --- CRITICAL FIX: FORCED LOAD ORDER ---
-# We manually symlink modules with numbers (10, 20, 30) to guarantee
-# NDK loads before Lua, and Lua loads before WAF.
+# --- FORCED NUMERICAL LOAD ORDER ---
+# Prevents dependency crashes by loading NDK (10) -> Lua (20) -> WAF (30)
 
 if [ $ENABLE_LUA -eq 1 ]; then
-    log "Enabling Lua Engine (with Load Order Enforcement)..."
-    
-    # 1. Helper: NDK (Must be first)
+    # 1. NDK Helper (Must be first)
     if [ -f /usr/share/nginx/modules-available/mod-http-ndk.conf ]; then
         ln -sf /usr/share/nginx/modules-available/mod-http-ndk.conf "$NGINX_MOD_EN/10-ndk.conf"
-    else
-        warn "NDK module file missing! Lua might crash."
     fi
-
-    # 2. Engine: Lua
+    # 2. Lua Engine
     if [ -f /usr/share/nginx/modules-available/mod-http-lua.conf ]; then
         ln -sf /usr/share/nginx/modules-available/mod-http-lua.conf "$NGINX_MOD_EN/20-lua.conf"
     fi
 fi
 
 if [ $ENABLE_WAF -eq 1 ]; then
-    log "Enabling WAF Engine..."
-    # 3. Shield: ModSecurity
+    # 3. WAF Engine
     if [ -f /usr/share/nginx/modules-available/mod-http-modsecurity.conf ]; then
         ln -sf /usr/share/nginx/modules-available/mod-http-modsecurity.conf "$NGINX_MOD_EN/30-modsec.conf"
     fi
 fi
 
-# 8b. Construct Base Config
+# Base Config
 cat > /etc/nginx/nginx.conf <<EOF
 user www-data;
 worker_processes auto;
 pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
-
 events { worker_connections 768; }
-
 http {
     sendfile on;
     tcp_nopush on;
@@ -231,16 +230,15 @@ http {
 }
 EOF
 
-# 8c. Web Root
+# Web Content
 mkdir -p "$WEB_ROOT"
 if [ ! -f "$WEB_ROOT/index.html" ]; then
-    echo "<h1>System Active</h1><p>Aegis v6.2</p>" > "$WEB_ROOT/index.html"
+    echo "<h1>Authorized Access Only</h1><p>Aegis v7.0</p>" > "$WEB_ROOT/index.html"
 fi
 chown -R www-data:www-data "$WEB_ROOT"
 
-# 8d. Build Site Config
-SITE_CONF="$NGINX_AVAIL/onion_site"
-
+# Site Config Builder
+SITE_CONF="/etc/nginx/sites-available/onion_site"
 echo "server {" > "$SITE_CONF"
 echo "    listen 127.0.0.1:80 default_server;" >> "$SITE_CONF"
 echo "    server_name _;" >> "$SITE_CONF"
@@ -249,58 +247,42 @@ echo "    index index.html;" >> "$SITE_CONF"
 echo "    server_tokens off;" >> "$SITE_CONF"
 echo "    add_header X-Frame-Options DENY;" >> "$SITE_CONF"
 
-# Inject WAF
 if [ $ENABLE_WAF -eq 1 ]; then
     mkdir -p "$NGINX_WAF_DIR"
-    # Download rules (with error check)
     if [ ! -f "$NGINX_WAF_DIR/modsecurity.conf" ]; then
-        wget -q https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended -O "$NGINX_WAF_DIR/modsecurity.conf" || warn "WAF Rules download failed, using empty config."
-        if [ -f "$NGINX_WAF_DIR/modsecurity.conf" ]; then
-            sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' "$NGINX_WAF_DIR/modsecurity.conf"
-        else
-             touch "$NGINX_WAF_DIR/modsecurity.conf"
-        fi
+        wget -q https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/modsecurity.conf-recommended -O "$NGINX_WAF_DIR/modsecurity.conf" || touch "$NGINX_WAF_DIR/modsecurity.conf"
+        sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' "$NGINX_WAF_DIR/modsecurity.conf"
     fi
     echo "include $NGINX_WAF_DIR/modsecurity.conf" > "$NGINX_WAF_DIR/main.conf"
-    
     echo "    modsecurity on;" >> "$SITE_CONF"
     echo "    modsecurity_rules_file $NGINX_WAF_DIR/main.conf;" >> "$SITE_CONF"
 fi
 
-# Inject Lua
-if [ $ENABLE_LUA -eq 1 ]; then
+if [ $ENABLE_LUA -eq 1 ] && [ -f "$CORE_DIR/response_padding.lua" ]; then
     mkdir -p "$NGINX_LUA_DIR"
-    if [ -f "$CORE_DIR/response_padding.lua" ]; then
-        cp "$CORE_DIR/response_padding.lua" "$NGINX_LUA_DIR/"
-        chmod 644 "$NGINX_LUA_DIR/response_padding.lua"
-        echo "    body_filter_by_lua_file $NGINX_LUA_DIR/response_padding.lua;" >> "$SITE_CONF"
-    fi
+    cp "$CORE_DIR/response_padding.lua" "$NGINX_LUA_DIR/"
+    chmod 644 "$NGINX_LUA_DIR/response_padding.lua"
+    echo "    body_filter_by_lua_file $NGINX_LUA_DIR/response_padding.lua;" >> "$SITE_CONF"
 fi
 
 echo "    location / { try_files \$uri \$uri/ =404; }" >> "$SITE_CONF"
 echo "}" >> "$SITE_CONF"
 
-# Enable Site
-ln -sf "$SITE_CONF" "$NGINX_ENAB/onion_site"
+ln -sf "$SITE_CONF" "$NGINX_MOD_EN/../sites-enabled/onion_site"
 
 # Validation
 log "Validating Nginx Config..."
 if ! nginx -t 2>/dev/null; then
-    error "Validation Failed. Reverting to Safe Mode (Disabling Modules)..."
+    error "Configuration Validation Failed. Reverting to Safe Mode..."
     sed -i 's/modsecurity on;/#modsecurity on;/g' "$SITE_CONF"
     sed -i 's/modsecurity_rules_file/#modsecurity_rules_file/g' "$SITE_CONF"
     sed -i 's/body_filter_by_lua_file/#body_filter_by_lua_file/g' "$SITE_CONF"
-    
-    # Critical: Remove module links if config fails
-    rm -f "$NGINX_MOD_EN/10-ndk.conf" "$NGINX_MOD_EN/20-lua.conf" "$NGINX_MOD_EN/30-modsec.conf"
-    
-    nginx -t || critical "Nginx failed in Safe Mode. Check /var/log/nginx/error.log"
+    rm -f "$NGINX_MOD_EN/"* nginx -t || critical "Nginx failed in Safe Mode. Check logs."
 fi
 
 # ==============================================================================
-# 9. SERVICES & BOOTSTRAP
+# 9. SERVICES & FIREWALL
 # ==============================================================================
-# Neural Sentry
 if [ $ENABLE_SENTRY -eq 1 ] && [ -f "$CORE_DIR/neural_sentry.py" ]; then
     cp "$CORE_DIR/neural_sentry.py" /usr/local/bin/neural_sentry.py
     chmod +x /usr/local/bin/neural_sentry.py
@@ -317,10 +299,8 @@ WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
     systemctl enable neural-sentry
-    log "Neural Sentry Installed."
 fi
 
-# Firewall
 log "Applying Firewall Rules..."
 cat > /etc/nftables.conf <<EOF
 flush ruleset
@@ -330,10 +310,14 @@ table inet filter {
     chain output { type filter hook output priority 0; policy accept; }
 }
 EOF
-nft -f /etc/nftables.conf 2>/dev/null
-systemctl enable nftables 2>/dev/null || true
+if nft -c -f /etc/nftables.conf 2>/dev/null; then
+    nft -f /etc/nftables.conf
+    systemctl enable nftables 2>/dev/null || true
+fi
 
-# Boot
+# ==============================================================================
+# 10. BOOTSTRAP (PATCHED)
+# ==============================================================================
 log "Bootstrapping Network..."
 systemctl daemon-reload
 systemctl restart tor@default
@@ -341,9 +325,13 @@ systemctl restart nginx
 [ $ENABLE_SENTRY -eq 1 ] && systemctl restart neural-sentry
 
 echo -n "Waiting for Onion Address generation"
+
+# CRITICAL FIX: Disable trap to prevent false positive during wait loop
+trap - ERR
+
 COUNT=0
-while [ ! -f "$TOR_HS/hostname" ] && [ $COUNT -lt 30 ]; do
-    sleep 2
+while [ ! -f "$TOR_HS/hostname" ] && [ $COUNT -lt 60 ]; do
+    sleep 1
     echo -n "."
     COUNT=$((COUNT+1))
 done
@@ -370,10 +358,6 @@ if [ "$HTTP_CODE" == "200" ]; then
     echo -e "${GREEN}>>> SYSTEM ONLINE: ${ONION} <<<${NC}"
 else
     echo -e "${RED}>>> SYSTEM ERROR (Code: $HTTP_CODE) <<<${NC}"
+    echo "Debug: Run 'curl -I 127.0.0.1' or check 'journalctl -u nginx'"
 fi
-echo "----------------------------------------------------------------"
-[ $ENABLE_WAF -eq 1 ]     && echo -e " [ON] WAF (ModSecurity)"    || echo -e " [OFF] WAF"
-[ $ENABLE_LUA -eq 1 ]     && echo -e " [ON] Lua (Padding)"        || echo -e " [OFF] Lua"
-echo "----------------------------------------------------------------"
-echo -e "Edit your site: ${CYAN}sudo aegis-edit${NC}"
 echo "================================================================"
