@@ -1,5 +1,5 @@
 # 🛡️ OnionSite-Aegis (Privacy-Focused Edition)
-**v5.0 | Military-Grade Tor Hidden Service Orchestrator with Enhanced Privacy & Anti-Tracking**
+**v7.0 | Military-Grade Tor Hidden Service Orchestrator with Enhanced Privacy & Anti-Tracking**
 
 [![Status](https://img.shields.io/badge/Status-Stable-green)]()
 [![Verified](https://img.shields.io/badge/Verified-All%20Tests%20Passed-brightgreen)]()
