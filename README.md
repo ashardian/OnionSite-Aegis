@@ -189,7 +189,7 @@ sudo test -f /var/lib/tor/hidden_service/hostname && echo "✓ Hidden service cr
 
 ### Method 2: Docker Installation
 
-See [DOCKER_DEPLOYMENT.md](https://www.google.com/search?q=docs/DOCKER_DEPLOYMENT.md) for full details.
+See [DOCKER_DEPLOYMENT.md](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/DOCKER_DEPLOYMENT.md) for full details.
 
 ```bash
 # Build and Run
@@ -249,12 +249,12 @@ sudo /usr/local/bin/privacy_log_sanitizer.py /mnt/ram_logs
 
 ## 📚 Documentation
 
-All documentation is available in the [`docs/`](https://www.google.com/search?q=docs/) directory:
+All documentation is available in the [`docs/`](https://github.com/ashardian/OnionSite-Aegis/tree/b9af589f979a265183835afe9004af87c05fa2f1/docs) directory:
 
-* **[Docker Deployment Guide](https://www.google.com/search?q=docs/DOCKER_DEPLOYMENT.md)** - Complete Docker deployment guide
-* **[Quick Start Guide](https://www.google.com/search?q=docs/QUICKSTART.md)** - Quick start for both methods
-* **[Anti-Tracking Guide](https://www.google.com/search?q=docs/ANTI_TRACKING_GUIDE.md)** - Comprehensive anti-tracking guide
-* **[Verification Report](https://www.google.com/search?q=docs/VERIFICATION_REPORT.md)** - Verification and stability report
+* **[Docker Deployment Guide](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/DOCKER_DEPLOYMENT.md)** - Complete Docker deployment guide
+* **[Quick Start Guide](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/QUICKSTART.md)** - Quick start for both methods
+* **[Anti-Tracking Guide](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/ANTI_TRACKING_GUIDE.md)** - Comprehensive anti-tracking guide
+* **[Verification Report](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/VERIFICATION_REPORT.md)** - Verification and stability report
 
 ---
 
@@ -276,7 +276,7 @@ This is a privacy-focused project. Contributions that enhance privacy and securi
 
 ## 📄 License
 
-**Custom License - See [LICENSE](https://www.google.com/search?q=LICENSE) file for full terms.**
+**Custom License - See [LICENSE](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/LICENSE) file for full terms.**
 
 **Quick Summary:**
 
@@ -285,7 +285,7 @@ This is a privacy-focused project. Contributions that enhance privacy and securi
 * 📢 You MUST give attribution/shoutout to the author
 
 **Attribution Requirements:**
-When using, redistributing, or showcasing OnionSite-Aegis, you must include copyright notices and give credit to the author. See [Attribution Guidelines](https://www.google.com/search?q=docs/ATTRIBUTION.md).
+When using, redistributing, or showcasing OnionSite-Aegis, you must include copyright notices and give credit to the author. See [Attribution Guidelines](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/ATTRIBUTION.md).
 
 ---
 
