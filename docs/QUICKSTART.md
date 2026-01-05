@@ -5,12 +5,12 @@ Complete setup instructions for both Docker and bare metal deployments.
 
 ## Table of Contents
 
-1. [Quick Start](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/QUICKSTART.md)
-2. [Bare Metal Installation]
-3. [Docker Installation]
-4. [Post-Installation]
-5. [Troubleshooting]
-6. [Maintenance]
+1. Quick Start
+2. Bare Metal Installation
+3. Docker Installation
+4. Post-Installation
+5. Troubleshooting
+6. Maintenance
 
 ---
 
