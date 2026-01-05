@@ -33,7 +33,7 @@ This release introduces the **Architect Installer**, a modular deployment engine
 
 ## 📖 Setup Guide
 
-**👉 For detailed setup instructions, see [SETUP.md**](SETUP.md)
+👉 For detailed setup instructions, see [SETUP.md](SETUP.md)
 
 The setup guide includes:
 
