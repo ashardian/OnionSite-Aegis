@@ -1,3 +1,5 @@
+![alt text](https://github.com/ashardian/OnionSite-Aegis/blob/9ae64b398bb7dbdadf3290d45a09d4b5ef734211/Onionsite-Aegis.png)
+
 # 🛡️ OnionSite-Aegis (Privacy-Focused Edition)
 **v7.0 | Military-Grade Tor Hidden Service Orchestrator with Enhanced Privacy & Anti-Tracking**
 
