@@ -31,7 +31,7 @@ except ImportError:
 # --- CONFIG ---
 TOR_CONTROL_PORT = 9051
 WEB_ROOT = "/var/www/onion_site"
-LOG_FILE = "/mnt/ram_logs/sentry.log"
+LOG_FILE = "/var/log/tor/sentry.log"
 MAX_CIRCUITS_PER_MIN = 30  # Attack Threshold
 MAX_CIRCUITS_PER_10SEC = 15  # Burst detection
 FILE_CHECK_INTERVAL = 5  # Seconds between file checks (if no inotify)
