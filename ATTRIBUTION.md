@@ -20,7 +20,7 @@ Include a comment or notice like:
 ```bash
 # OnionSite-Aegis - Privacy-Focused Tor Hidden Service Orchestrator
 # Created by Ashar Dian
-# https://github.com/ashardian/OnionSite-Aegis.git
+# https://github.com/ashardian/OnionSite-Aegis
 ```
 
 ### In README Files
@@ -30,7 +30,7 @@ Add a section like:
 ```markdown
 ## Credits
 
-This project uses [OnionSite-Aegis](https://github.com/ashardian/OnionSite-Aegis.git) 
+This project uses [OnionSite-Aegis](https://github.com/ashardian/OnionSite-Aegis) 
 by Ashar Dian. Shoutout to the creator for this amazing privacy-focused tool!
 ```
 
@@ -44,7 +44,7 @@ Verbally mention:
 And include in video description:
 ```
 Tools used:
-- OnionSite-Aegis by Ashar Dian - https://github.com/ashardian/OnionSite-Aegis.git
+- OnionSite-Aegis by Ashar Dian - https://github.com/ashardian/OnionSite-Aegis
 ```
 
 ### In Blog Posts/Articles
@@ -67,7 +67,7 @@ When posting about OnionSite-Aegis:
 - "Built with OnionSite-Aegis by Ashar Dian"
 - "Using OnionSite-Aegis - credit to Ashar Dian"
 - "Shoutout to Ashar Dian for OnionSite-Aegis!"
-- "Powered by OnionSite-Aegis - https://github.com/ashardian/OnionSite-Aegis.git"
+- "Powered by OnionSite-Aegis - https://github.com/ashardian"
 
 ❌ **Bad:**
 - Using without any mention
