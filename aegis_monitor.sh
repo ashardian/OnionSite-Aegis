@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# ONIONSITE-AEGIS | HUD v5.0 (Session-Based Architect Edition)
+# ONIONSITE-AEGIS | HUD (Session-Based Architect Edition)
 # FIX: Ignores old history. Starts fresh every time you run it.
 # ==============================================================================
 
@@ -101,7 +101,7 @@ while true; do
     
     # 2. RENDER HEADER
     echo -e "${BLUE}======================================================================${NC}"
-    echo -e "   ${CYAN}🛡️  ONIONSITE-AEGIS HUD v5.0${NC}   |   ${GREY}SESSION LIVE${NC}"
+    echo -e "   ${CYAN}🛡️  ONIONSITE-AEGIS HUD ${NC}   |   ${GREY}SESSION LIVE${NC}"
     echo -e "${BLUE}======================================================================${NC}"
     
     # 3. SYSTEM VITALS
