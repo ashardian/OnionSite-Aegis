@@ -1,7 +1,7 @@
 ![alt text](https://github.com/ashardian/OnionSite-Aegis/blob/1128aa00d9f5cfb59266958a8838d76adf382855/Onionsite-Aegis.jpeg)
 
 
-# 🛡️ OnionSite-Aegis (v7.0 Architect Edition)
+# 🛡️ OnionSite-Aegis (v9.0 Architect Edition)
 
 > **Military-Grade Tor Hidden Service Orchestrator with Enhanced Privacy & Anti-Tracking**
 > *Automated. Hardened. Anti-Forensic. Privacy-First.*
@@ -10,14 +10,16 @@
 
 ---
 
-## ⚠️ Architect Edition Notice (v7.0)
+## ⚠️ Architect Edition Notice (v9.0)
 
-This release introduces the **Architect Installer**, a modular deployment engine that solves critical dependency issues and adds interactive configuration.
+This release introduces the **Architect Installer v9.0**, a modular deployment engine that solves critical dependency issues and adds interactive configuration.
 
 * **Interactive Feature Selector:** Choose exactly which modules (WAF, Lua, Neural Sentry) to enable.
+* **SSH Safety Valve:** New logic allows secure remote management (SSH) for Cloud VPS deployments without compromising firewall integrity.
+* **Balanced Firewall:** Optimized NFTables ruleset that provides military-grade input blocking while ensuring reliable Tor circuit establishment.
 * **Nuclear Sanitization:** Automatically purges "ghost configurations" and conflicting binaries before deployment.
 * **Anti-Forensics:** All logs are written to `tmpfs` (RAM) and vanish upon reboot.
-* **Tor Bootstrap Stabilization:** New patch prevents false-positive aborts during the connection phase.
+* **Session-Based Monitoring:** New HUD tracks active threats in real-time, ignoring historical log noise.
 
 ---
 
@@ -25,11 +27,12 @@ This release introduces the **Architect Installer**, a modular deployment engine
 
 * 🔒 **Impossible to Track** - Comprehensive anti-tracking measures make correlation attacks impossible
 * 🐳 **Docker Support** - Containerized deployment for maximum isolation
-* 🛡️ **Enhanced Firewall** - DDoS protection with advanced rate limiting
+* 🛡️ **Enhanced Firewall** - "Balanced" NFTables ruleset prevents leaks while maintaining connectivity
 * 🧠 **Neural Sentry** - Real-time attack detection and automatic defense
 * 💾 **Amnesic Logging** - RAM-only logs that vanish on reboot
 * 🚫 **Zero Fingerprinting** - Complete header removal and response padding
 * ⚡ **Traffic Analysis Resistant** - Response size padding and timing randomization
+* 🖥️ **Live System HUD** - Professional-grade terminal dashboard for real-time monitoring
 
 ## 📖 Setup Guide
 
@@ -101,14 +104,14 @@ A Python-based daemon (`neural_sentry.py`) that acts as a localized IDS with pri
 * **Enhanced NFTables Firewall:**
 * DDoS protection (SYN flood, connection rate limiting)
 * Per-IP connection limits (max 5 connections/minute)
-* Host-level firewall script for Docker deployments
-
+* Host-level firewall script for Docker deployments Blocks unsolicited input (Port Scanning Protection)
+* Optional SSH Access control (Safe for VPS)
 
 * **Tor Sandbox:** Runs Tor with `Sandbox 1`, preventing the process from making unauthorized syscalls.
 * **Nginx Privacy Headers:** Anti-fingerprinting headers, rate limiting, and request sanitization.
 * **Kernel Hardening:** Extended sysctl settings for network privacy and exploit prevention.
 
-### 4. Privacy Monitor
+### 4. Privacy Monitor 
 
 Automated privacy compliance checker that runs periodically:
 
@@ -117,6 +120,12 @@ Automated privacy compliance checker that runs periodically:
 * Validates RAM log mounting
 * Alerts on privacy misconfigurations
 
+**A new, professional-grade terminal dashboard (aegis_monitor.sh) that provides:**
+
+* Session-Based Tracking: Ignores old logs, showing only current session threats.
+* Live Resource Tracking: CPU/RAM usage for Tor and Nginx.
+* RAM Security Check: Visually confirms if logs are safe in RAM or leaking to disk.
+* Real-Time Feed: A clean stream of security events (Attacks/Warnings) without debug noise.
 ### 5. Web Application Firewall (WAF)
 
 * OWASP ModSecurity Core Rule Set (CRS)
@@ -161,9 +170,10 @@ sudo ./install.sh
 ```
 
 
-The v7.0 Architect Installer will prompts you to configure:
+The v9.0 Architect Installer will prompts you to configure:
 * **WAF & IPS:** Enable for high security, disable for low RAM usage.
 * **Lua Padding:** Enable for anti-fingerprinting.
+* **SSH Access** CRITICAL: Enable this if you are using a Cloud VPS (AWS/DigitalOcean) to prevent lockout.
 * **Wipe Identity:** Choose to keep existing keys or generate new ones.
 
 
@@ -213,6 +223,11 @@ Use the built-in tool to handle permissions and reloading:
 sudo aegis-edit
 
 ```
+Monitor System Health
+
+```bash
+sudo ./aegis_monitor.sh
+```
 
 ### Privacy Monitoring
 
@@ -228,6 +243,11 @@ sudo /usr/local/bin/privacy_monitor.sh
 **CRITICAL:** Always backup your Tor keys to preserve your Onion address.
 
 ```bash
+#Builtin Tool (Automatic)
+sudo ./SAVE_MY_ONION.sh
+
+#Manual
+
 # Bare metal
 sudo tar -czf onion-keys-backup-$(date +%Y%m%d).tar.gz /var/lib/tor/hidden_service/
 
