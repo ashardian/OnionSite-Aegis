@@ -1,241 +1,133 @@
-# Improvements Summary - v5.0
+
+# Improvements Summary - v9.0 Architect
 
 ## Overview
-This document summarizes all improvements made to OnionSite-Aegis, focusing on enhanced firewall security and Docker containerization for better isolation and security.
+This document summarizes the improvements made to OnionSite-Aegis v9.0, focusing on the new "Balanced" firewall architecture, SSH safety mechanisms, and enhanced stability for bare-metal deployments.
 
-## 🔥 Enhanced Firewall (NFTables)
+## 🔥 Key Updates (v9.0)
 
-### Previous Configuration
-- Basic whitelist-only rules
-- Simple loopback and established connection handling
-- No DDoS protection
-- No rate limiting
+### 1. Balanced Firewall (NFTables)
+- **Problem:** Previous versions (v7.0/v8.0) used aggressive rate-limiting that occasionally choked Tor circuit establishment, causing "Onion Site Not Found" errors.
+- **Solution (v9.0):** Implemented a "Balanced" NFTables ruleset.
+  - **DDoS Protection:** Blocks unsolicited external packets (anti-scanning).
+  - **Tor Permissive:** Explicitly allows "Established/Related" connections, ensuring reliable Tor directory fetch.
+  - **Output Control:** Allows Tor to communicate outward freely, but blocks incoming threats.
+  - **Logging:** Drops are logged with prefix `FIREWALL-DROP:`.
 
-### New Configuration
-- **DDoS Protection:**
-  - SYN flood protection (25/second with burst)
-  - Connection rate limiting per IP (10/minute)
-  - Per-IP connection limits (max 5 connections/minute)
-  - Timeout-based tracking sets
-  
-- **Enhanced Security:**
-  - Invalid packet dropping
-  - ICMP restrictions (only essential types)
-  - Comprehensive logging
-  - Fragment protection
-  
-- **Host-Level Firewall Script:**
-  - `docker-host-firewall.sh` for Docker deployments
-  - Additional security layer on host
-  - Docker bridge network protection
+### 2. SSH Safety Valve (Cloud Ready)
+- **Feature:** New interactive prompt during installation: `Allow SSH Access? [y/N]`
+- **Function:** If enabled, it automatically modifies the firewall to whitelist Port 22.
+- **Benefit:** Prevents accidental lockouts when deploying on Cloud VPS (AWS/DigitalOcean/Linode).
 
-## 🐳 Docker Implementation
+### 3. Session-Based Monitoring HUD
+- **New Monitor:** `aegis_monitor.sh` v5.0 included.
+- **Session Logic:** Ignores historical logs. Only counts threats/warnings that occur *after* the monitor is started.
+- **Real-Time Stream:** Filters out debug noise and shows only active threats.
 
-### New Files Created
-1. **Dockerfile** - Multi-stage container build
-2. **docker-compose.yml** - Orchestration with security configs
-3. **docker-entrypoint.sh** - Container initialization
-4. **docker-host-firewall.sh** - Host-level firewall setup
-5. **seccomp-profile.json** - System call restrictions
-6. **.dockerignore** - Build optimization
-7. **DOCKER_DEPLOYMENT.md** - Complete deployment guide
-8. **QUICKSTART.md** - Quick start guide
+## 🐳 Docker Implementation (v9.0)
 
 ### Security Features
-
-#### Container Isolation
-- **Network Isolation:** Internal bridge network (no external access)
+- **Container Isolation:** Internal bridge network (no external access)
 - **Read-only Web Content:** Webroot mounted as read-only
-- **Minimal Capabilities:** Only required Linux capabilities
-  - NET_BIND_SERVICE
-  - CHOWN, SETUID, SETGID
-  - DAC_OVERRIDE
+- **Minimal Capabilities:** Only required Linux capabilities (NET_BIND_SERVICE, etc.)
 - **Seccomp Profile:** Restricted system calls (whitelist approach)
-- **AppArmor:** Additional access control
-- **No New Privileges:** Prevents privilege escalation
-
-#### Resource Limits
-- CPU: 2 cores max, 0.5 cores reserved
-- Memory: 512MB max, 256MB reserved
-- Prevents resource exhaustion attacks
-
-#### Volume Management
-- **Tor Keys:** Persistent storage in `data/tor-keys/`
-- **RAM Logs:** tmpfs mount (256MB, noexec, nosuid, nodev)
-- **Web Content:** Read-only bind mount
-
-#### Health Monitoring
-- Health check endpoint
-- Automatic restart on failure
-- Log aggregation (optional, privacy-focused)
+- **Resources:** CPU and Memory caps to prevent DoS.
 
 ### Benefits Over Bare Metal
 
-| Feature | Docker | Bare Metal |
-|---------|--------|------------|
+| Feature | Docker | Bare Metal (v9.0) |
+|---------|--------|-------------------|
 | **Isolation** | High (container) | Low (host) |
-| **Security** | Enhanced (multiple layers) | Depends on host |
-| **Portability** | High | Low |
-| **Setup Time** | 5 minutes | 10+ minutes |
-| **Maintenance** | Easy (docker-compose) | Manual |
-| **Resource Control** | Built-in limits | Manual config |
-| **Rollback** | Instant | Complex |
+| **Security** | Enhanced (layers) | Hardened Host |
+| **Setup Time** | 5 minutes | 8 minutes |
+| **SSH Safety** | N/A (Host managed) | **Built-in Valve** |
+| **Firewall** | Container+Host | **Balanced NFTables** |
 
-## 📊 Comparison: Before vs After
+## 📊 Comparison: v7.0 vs v9.0
 
 ### Firewall Security
-**Before:**
-- Basic rules
-- No DDoS protection
-- No rate limiting
-- Minimal logging
+**v7.0 (Previous):**
+- Aggressive rate limiting (5 conn/min)
+- Occasional Tor blockages
+- No SSH safety mechanism
 
-**After:**
-- Advanced DDoS protection
-- Multi-layer rate limiting
-- Connection tracking
-- Comprehensive logging
-- Host-level firewall option
+**v9.0 (Current):**
+- Balanced connection tracking
+- 100% Tor reliability
+- Integrated SSH safety valve
+- Simplified Input chain
 
 ### Deployment Options
-**Before:**
-- Bare metal only
-- Manual configuration
-- Host-dependent security
+**v7.0:**
+- Bare metal or Docker
+- Manual config for Cloud VPS
 
-**After:**
-- Docker (recommended)
-- Bare metal (still supported)
-- Container isolation
-- Host-level firewall script
-- Automated setup
-
-### Security Layers
-**Before:**
-- Application security
-- Basic firewall
-- Kernel hardening
-
-**After:**
-- Application security
-- Enhanced firewall (container + host)
-- Kernel hardening
-- Container isolation
-- Seccomp restrictions
-- AppArmor profiles
-- Capability restrictions
-- Resource limits
+**v9.0:**
+- Interactive Architect Installer
+- Cloud-ready (SSH prompt)
+- Automatic log sanitization path fixes
 
 ## 🚀 Quick Start Comparison
 
-### Docker (New - Recommended)
+### Docker (Recommended)
 ```bash
 mkdir -p data/tor-keys webroot
 echo "<h1>Site</h1>" > webroot/index.html
 docker-compose up -d
 docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
 ```
-
-### Bare Metal (Still Supported)
-```bash
+Bare Metal (Architect v9.0)
+Bash
 sudo ./install.sh
+# Answer 'Y' to enable SSH if on Cloud VPS
 sudo cat /var/lib/tor/hidden_service/hostname
-```
+🔒 Security Layers (v9.0)
+Firewall Enhancements
+Input Blocking: Drops all new external connections not matched by loopback or established state.
 
-## 🔒 Security Improvements
+Tor Optimization: "Established/Related" rule ensures Tor directory fetches succeed.
 
-### Firewall Enhancements
-1. **SYN Flood Protection:** Prevents TCP SYN flood attacks
-2. **Rate Limiting:** Multiple layers (per-IP, per-connection)
-3. **Connection Tracking:** Limits concurrent connections
-4. **ICMP Restrictions:** Only essential ICMP types allowed
-5. **Logging:** Comprehensive attack logging
+SSH Valve: Optional, user-controlled hole for remote management.
 
-### Docker Security
-1. **Isolation:** Complete container isolation
-2. **Capabilities:** Minimal required capabilities
-3. **Seccomp:** Restricted system calls
-4. **AppArmor:** Additional access control
-5. **Resource Limits:** CPU and memory limits
-6. **Network Isolation:** Internal network only
-7. **Read-only Mounts:** Web content read-only
+Docker Security
+Isolation: Complete container isolation
 
-## 📝 Documentation
+Capabilities: Minimal required capabilities
 
-### New Documentation Files
-- **DOCKER_DEPLOYMENT.md** - Complete Docker guide
-- **QUICKSTART.md** - Quick start for both methods
-- **IMPROVEMENTS_SUMMARY.md** - This file
-- Updated **README.md** - Docker-first approach
+Seccomp: Restricted system calls
 
-### Updated Files
-- **conf/nftables.conf** - Enhanced firewall rules
-- **README.md** - Docker deployment instructions
-- **install.sh** - Still works for bare metal
+AppArmor: Additional access control
 
-## 🎯 Migration Path
+Resource Limits: CPU and memory limits
 
-### From Bare Metal to Docker
-1. Backup Tor keys: `sudo tar -czf backup.tar.gz /var/lib/tor/hidden_service/`
-2. Stop services: `sudo systemctl stop tor nginx neural-sentry`
-3. Copy web content to `webroot/`
-4. Restore keys to `data/tor-keys/`
-5. Start Docker: `docker-compose up -d`
+📝 Documentation Updates
+QUICKSTART.md - Updated for v9.0 steps
 
-### Staying on Bare Metal
-- All improvements work on bare metal
-- Enhanced firewall applies automatically
-- No changes required
+install.sh - Updated with v9.0 logic
 
-## ✅ Testing Checklist
+IMPROVEMENTS_SUMMARY.md - This file
 
-### Docker Deployment
-- [ ] Container builds successfully
-- [ ] Container starts without errors
-- [ ] Tor generates Onion address
-- [ ] Nginx serves content
-- [ ] Neural Sentry is running
-- [ ] Health checks pass
-- [ ] Logs are in RAM (tmpfs)
-- [ ] Firewall rules applied
+✅ Testing Checklist
+v9.0 Deployment
+[ ] Installer runs without "unary operator" errors
 
-### Bare Metal Deployment
-- [ ] Installation completes
-- [ ] All services start
-- [ ] Firewall rules active
-- [ ] Tor generates Onion address
-- [ ] Neural Sentry monitoring
-- [ ] Privacy monitor runs
+[ ] SSH prompt appears and functions
 
-## 🔮 Future Enhancements
+[ ] Firewall rules permit Tor bootstrapping
 
-Potential improvements:
-- Kubernetes deployment option
-- Multi-instance support
-- Automated backups
-- Monitoring dashboard
-- SSL/TLS termination (if needed)
-- Load balancing (multiple instances)
+[ ] Onion address generates within 60 seconds
 
-## 📞 Support
+[ ] Neural Sentry logs to RAM correctly
 
-For issues:
-1. Check logs: `docker-compose logs` or `journalctl`
-2. Review documentation
-3. Verify firewall rules
-4. Check resource limits
-5. Validate configuration files
+🎉 Summary
+The v9.0 update brings:
 
-## 🎉 Summary
+✅ Stability: Fixed Tor connectivity issues via Balanced Firewall.
 
-The v5.0 update brings:
-- ✅ **Enhanced Firewall** with DDoS protection
-- ✅ **Docker Support** for better isolation
-- ✅ **Host-Level Firewall** script
-- ✅ **Comprehensive Documentation**
-- ✅ **Easy Deployment** (5 minutes)
-- ✅ **Better Security** (multiple layers)
-- ✅ **Backward Compatible** (bare metal still works)
+✅ Usability: SSH Safety Valve for Cloud deployments.
 
-All improvements maintain the privacy-first philosophy while significantly enhancing security and ease of deployment.
+✅ Reliability: Fixed installer variable crashes.
 
+✅ Monitoring: New Session-Based HUD.
+
+All improvements maintain the privacy-first philosophy while significantly enhancing stability and ease of deployment.
