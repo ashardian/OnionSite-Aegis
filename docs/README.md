@@ -12,7 +12,6 @@ This directory contains all documentation for OnionSite-Aegis.
 - **[Improvements Summary](IMPROVEMENTS_SUMMARY.md)** - All improvements summary
 - **[Verification Report](VERIFICATION_REPORT.md)** - Verification and stability report
 - **[Attribution Guidelines](ATTRIBUTION.md)** - How to give proper attribution
-- **[GitHub Description](GITHUB_DESCRIPTION.md)** - GitHub repository descriptions and tags
 
 ## Quick Links
 
