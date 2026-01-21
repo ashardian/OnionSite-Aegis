@@ -2,6 +2,27 @@
 # Docker Entrypoint for OnionSite-Aegis
 set -e
 
+# ---- Debian-only execution guard ----
+if [ ! -f /etc/os-release ]; then
+    echo "[FATAL] Cannot detect container OS."
+    exit 1
+fi
+
+. /etc/os-release
+
+if [[ "${ID}" != "debian" ]]; then
+    echo "[FATAL] Unsupported container OS: ${ID}"
+    echo "OnionSite-Aegis containers are designed for Debian only."
+    exit 1
+fi
+
+if [[ "${VERSION_ID}" != "11" ]]; then
+    echo "[FATAL] Unsupported Debian version: ${VERSION_ID}"
+    echo "Debian 11 (Bullseye) is required."
+    exit 1
+fi
+
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
