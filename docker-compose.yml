@@ -34,7 +34,9 @@ services:
     # Volumes
     volumes:
       # Persistent storage for Tor keys (critical - don't lose these!)
-      - onion-keys:/var/lib/tor/hidden_service:rw
+       
+# CHANGED: We use a direct path so Docker creates the folder automatically for you
+      - ./data/tor-keys:/var/lib/tor/hidden_service:rw
       # Web content
       - ./webroot:/var/www/onion_site:ro  # Read-only web content
       # RAM logs (tmpfs for privacy)
@@ -43,9 +45,7 @@ services:
         tmpfs:
           size: 256M
           mode: 1777
-          noexec: true
-          nosuid: true
-          nodev: true
+          # Removed unsupported properties: noexec, nosuid, nodev
       # Optional: Mount custom configs
       # - ./custom-torrc:/etc/tor/torrc:ro
     
@@ -91,15 +91,6 @@ services:
     # Command
     command: ["aegis"]
 
-# Named volumes
-volumes:
-  onion-keys:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/data/tor-keys  # Local directory for persistence
-
 # Networks
 networks:
   aegis-internal:
@@ -108,4 +99,3 @@ networks:
     ipam:
       config:
         - subnet: 172.28.0.0/16
-

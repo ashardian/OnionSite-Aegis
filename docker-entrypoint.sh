@@ -16,6 +16,34 @@ error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
+# ---- Debian-only execution guard ----
+if [ ! -f /etc/os-release ]; then
+    echo "[FATAL] Cannot detect container OS."
+    exit 1
+fi
+
+. /etc/os-release
+
+if [[ "${ID}" != "debian" ]]; then
+    echo "[FATAL] Unsupported container OS: ${ID}"
+    echo "OnionSite-Aegis containers are designed to run on Debian only."
+    exit 1
+fi
+
+log "Debian environment detected (version ${VERSION_ID})."
+
+# ---- Version awareness (non-blocking) ----
+case "${VERSION_ID}" in
+    13)
+        log "Debian 13 detected (primary supported platform)."
+        ;;
+    *)
+        log "WARNING: Debian ${VERSION_ID} detected."
+        log "This version is not the primary test target (Debian 13)."
+        ;;
+esac
+
+
 # Function to setup RAM logging
 setup_ram_logs() {
     log "Setting up RAM-based logging..."
@@ -251,4 +279,3 @@ case "${1:-aegis}" in
         exec "$@"
         ;;
 esac
-
