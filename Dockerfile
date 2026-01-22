@@ -35,7 +35,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-RUN pip3 install --no-cache-dir stem inotify
+RUN pip3 install --no-cache-dir stem inotify --break-system-packages
 
 # Create necessary directories
 RUN mkdir -p \
@@ -102,4 +102,3 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Default command
 CMD ["aegis"]
-
