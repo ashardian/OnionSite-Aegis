@@ -279,4 +279,3 @@ case "${1:-aegis}" in
         exec "$@"
         ;;
 esac
-
