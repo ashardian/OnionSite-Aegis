@@ -1,0 +1,41 @@
+# --- Security: Critical Secrets (NEVER UPLOAD) ---
+data/
+tor-keys/
+*.key
+*.pem
+*.crt
+.env
+.env.local
+
+# --- Docker: Local Volumes & Logs ---
+docker-compose.override.yml
+/var/
+/tmp/
+*.log
+
+# --- Python: Caches & Virtual Envs ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- OS: System Junk Files ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- IDE: Editor Settings ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Project Specific ---
+# Ignore the webroot if it contains sensitive user uploads
+# webroot/uploads/
