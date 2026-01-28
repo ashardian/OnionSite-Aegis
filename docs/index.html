@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#020203">
     <title>OnionSite-Aegis | v9.0 Architect Edition</title>
     <meta name="description" content="Military-Grade Tor Hidden Service Orchestrator. Optimized for Docker, Bare Metal Architectures.">
     <meta name="keywords" content="tor, hidden service, anonymity, docker, security, privacy, aegis">
@@ -14,81 +15,17 @@
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     
-    <!-- Performance Optimized Resources -->
-    <script>
-        // Load Tailwind asynchronously to prevent render blocking
-        (function() {
-            var script = document.createElement('script');
-            script.src = 'https://cdn.tailwindcss.com';
-            script.async = true;
-            script.onload = function() {
-                tailwind.config = {
-                    theme: {
-                        extend: {
-                            fontFamily: {
-                                sans: ['Inter', 'sans-serif'],
-                                mono: ['JetBrains Mono', 'monospace'],
-                            },
-                            colors: {
-                                brand: {
-                                    dark: '#020203',
-                                    card: '#0A0A0C',
-                                    border: '#1F1F24',
-                                    green: '#00F0FF', 
-                                    purple: '#7000FF',
-                                    success: '#00DC82',
-                                    danger: '#FF4E4E',
-                                    warning: '#FFB800'
-                                }
-                            },
-                            animation: {
-                                'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                                'scan': 'scan 10s linear infinite',
-                                'float': 'float 6s ease-in-out infinite',
-                                'glow': 'glow 2s ease-in-out infinite alternate',
-                            },
-                            keyframes: {
-                                scan: {
-                                    '0%': { backgroundPosition: '0% 0%' },
-                                    '100%': { backgroundPosition: '0% 100%' }
-                                },
-                                float: {
-                                    '0%, 100%': { transform: 'translateY(0)' },
-                                    '50%': { transform: 'translateY(-10px)' },
-                                },
-                                glow: {
-                                    'from': { boxShadow: '0 0 5px rgba(0, 240, 255, 0.2)' },
-                                    'to': { boxShadow: '0 0 20px rgba(0, 240, 255, 0.6)' }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-            document.head.appendChild(script);
-        })();
-    </script>
-    
-    <!-- Preload Critical Resources -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    
-    <!-- CSS with Fallback -->
-    <noscript>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    </noscript>
-    
-    <!-- AOS Animation -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    
-    <!-- Custom Styles -->
-    <style>
+    <!-- Critical CSS (Inline to prevent FOUC) -->
+    <style id="critical-css">
+        /* Minimal critical styles for immediate rendering */
         :root {
             --brand-dark: #020203;
             --brand-card: #0A0A0C;
             --brand-green: #00F0FF;
             --brand-purple: #7000FF;
+            --brand-success: #00DC82;
+            --brand-danger: #FF4E4E;
+            --brand-warning: #FFB800;
         }
         
         * {
@@ -97,16 +34,88 @@
             box-sizing: border-box;
         }
         
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+        }
+        
+        html {
+            visibility: visible !important;
+            opacity: 1 !important;
+            transition: opacity 0.3s ease;
+        }
+        
         body {
             background-color: var(--brand-dark);
             color: #e4e4e7;
             overflow-x: hidden;
-            font-family: 'Inter', sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
             min-height: 100vh;
             position: relative;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
         
-        /* Focus Styles for Accessibility */
+        /* Loading screen styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 99999;
+            background: var(--brand-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 240, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--brand-green);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Make sure content is visible after loading */
+        body.content-loaded {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Basic layout structure */
+        nav {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: rgba(2, 2, 3, 0.95);
+            z-index: 1000;
+        }
+        
+        main {
+            display: block;
+            padding-top: 80px;
+        }
+        
+        /* Focus styles for accessibility */
         :focus {
             outline: 2px solid var(--brand-green);
             outline-offset: 2px;
@@ -116,6 +125,80 @@
             outline: none;
         }
         
+        /* Print styles */
+        @media print {
+            #loading-screen,
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://cdn.tailwindcss.com" as="script" crossorigin="anonymous">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" as="style" crossorigin="anonymous">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" crossorigin="anonymous">
+    <link rel="preload" href="https://unpkg.com/aos@2.3.1/dist/aos.css" as="style" crossorigin="anonymous">
+    
+    <!-- Load Tailwind CSS synchronously -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            dark: '#020203',
+                            card: '#0A0A0C',
+                            border: '#1F1F24',
+                            green: '#00F0FF', 
+                            purple: '#7000FF',
+                            success: '#00DC82',
+                            danger: '#FF4E4E',
+                            warning: '#FFB800'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scan 10s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'fade-in': 'fadeIn 0.5s ease-in',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { backgroundPosition: '0% 0%' },
+                            '100%': { backgroundPosition: '0% 100%' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        glow: {
+                            'from': { boxShadow: '0 0 5px rgba(0, 240, 255, 0.2)' },
+                            'to': { boxShadow: '0 0 20px rgba(0, 240, 255, 0.6)' }
+                        },
+                        fadeIn: {
+                            'from': { opacity: '0' },
+                            'to': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Load CSS with fallback -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Enhanced Custom Styles -->
+    <style>
         /* Tactical Grid Background */
         .tech-bg {
             background-image: 
@@ -139,7 +222,7 @@
             pointer-events: none;
         }
         
-        /* Glassmorphism */
+        /* Glassmorphism with fallback */
         .glass-panel {
             background: rgba(10, 10, 14, 0.85);
             backdrop-filter: blur(20px);
@@ -148,18 +231,24 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
         
+        @supports not (backdrop-filter: blur(20px)) {
+            .glass-panel {
+                background: rgba(10, 10, 14, 0.95);
+            }
+        }
+        
         .glass-card {
             background: rgba(14, 14, 18, 0.6);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .glass-card:hover {
             border-color: rgba(0, 240, 255, 0.3);
             box-shadow: 0 0 30px rgba(0, 240, 255, 0.1);
-            transform: translateY(-5px);
+            transform: translateY(-5px) scale(1.01);
         }
         
         /* Mobile Optimization */
@@ -175,30 +264,10 @@
             }
         }
         
-        /* Accordion */
-        .faq-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .faq-item.active .faq-content {
-            max-height: 500px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .faq-icon {
-            transition: transform 0.3s ease;
-        }
-        
-        .faq-item.active .faq-icon {
-            transform: rotate(45deg);
-            color: #FF4E4E;
-        }
-        
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
+            height: 8px;
         }
         
         ::-webkit-scrollbar-track {
@@ -206,18 +275,19 @@
         }
         
         ::-webkit-scrollbar-thumb {
-            background: rgba(51, 51, 51, 0.8);
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.5) 0%, rgba(112, 0, 255, 0.5) 100%);
             border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: #00F0FF;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.8) 0%, rgba(112, 0, 255, 0.8) 100%);
         }
         
         /* Firefox Scrollbar */
         * {
             scrollbar-width: thin;
-            scrollbar-color: #333 #020203;
+            scrollbar-color: rgba(0, 240, 255, 0.5) #020203;
         }
         
         /* Text Gradient */
@@ -228,10 +298,43 @@
             background-clip: text;
         }
         
+        /* Section Anchors Offset for Fixed Header */
+        section[id] {
+            scroll-margin-top: 100px;
+        }
+        
+        /* Performance Optimizations */
+        .will-change-transform {
+            will-change: transform;
+        }
+        
+        /* Skip to Content Link */
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--brand-green);
+            color: var(--brand-dark);
+            padding: 8px 16px;
+            z-index: 1000;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: 'JetBrains Mono', monospace;
+            transition: top 0.3s ease;
+        }
+        
+        .skip-to-content:focus {
+            top: 10px;
+            outline: 2px solid var(--brand-green);
+            outline-offset: 2px;
+        }
+        
         /* Terminal Cursor */
         .cursor-blink {
             animation: blink 1s infinite;
             color: #00F0FF;
+            font-weight: bold;
         }
         
         @keyframes blink {
@@ -239,12 +342,17 @@
             50% { opacity: 0; }
         }
         
-        /* Section Anchors Offset for Fixed Header */
-        section[id] {
-            scroll-margin-top: 100px;
+        /* Security Badge */
+        #security-badge {
+            animation: badgeGlow 2s ease-in-out infinite alternate;
         }
         
-        /* Loading State */
+        @keyframes badgeGlow {
+            from { boxShadow: 0 0 5px rgba(0, 240, 255, 0.3); }
+            to { boxShadow: 0 0 15px rgba(0, 240, 255, 0.6); }
+        }
+        
+        /* Loading shimmer effect */
         .loading-shimmer {
             background: linear-gradient(90deg, 
                 rgba(255,255,255,0) 0%, 
@@ -259,54 +367,68 @@
             100% { background-position: 200% 0; }
         }
         
-        /* Performance Optimizations */
-        .will-change-transform {
-            will-change: transform;
+        /* FAQ Accordion */
+        .faq-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .content-visibility-auto {
-            content-visibility: auto;
+        .faq-item.active .faq-content {
+            max-height: 500px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
         
-        /* Skip to Content Link (Accessibility) */
-        .skip-to-content {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: var(--brand-green);
-            color: var(--brand-dark);
-            padding: 8px 16px;
-            z-index: 1000;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
+        .faq-icon {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .skip-to-content:focus {
-            top: 0;
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+            color: #FF4E4E;
         }
         
-        /* Print Styles */
-        @media print {
-            body {
-                background: white !important;
-                color: black !important;
-            }
-            
-            .glass-card, .glass-panel {
-                background: white !important;
-                border: 1px solid #ccc !important;
-                box-shadow: none !important;
-                backdrop-filter: none !important;
-            }
-            
-            nav, button, .no-print {
-                display: none !important;
+        /* Mobile Menu Animation */
+        #mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        #mobile-menu.open {
+            transform: translateX(0);
+        }
+        
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, ::before, ::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
 </head>
 <body class="antialiased selection:bg-brand-green selection:text-black tech-bg" data-aos-easing="ease-out-cubic" data-aos-duration="600">
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 z-[9999] bg-brand-dark flex flex-col items-center justify-center">
+        <div class="text-center mb-8">
+            <div class="relative w-20 h-20 mx-auto mb-6">
+                <div class="absolute inset-0 border-4 border-brand-green/20 rounded-full animate-ping"></div>
+                <div class="absolute inset-0 border-4 border-brand-green rounded-full border-t-transparent animate-spin"></div>
+                <div class="absolute inset-4 border-4 border-brand-purple/50 rounded-full border-r-transparent animate-spin" style="animation-duration: 1.5s; animation-direction: reverse;"></div>
+            </div>
+            <div class="text-gradient font-mono text-lg font-bold mb-2">
+                OnionSite-Aegis v9.0
+            </div>
+            <div class="text-gray-500 font-mono text-sm">
+                Loading secure environment...
+            </div>
+        </div>
+        <div class="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
+            <div id="loading-progress" class="h-full bg-gradient-to-r from-brand-green to-brand-purple transition-all duration-300 ease-out" style="width: 0%"></div>
+        </div>
+    </div>
     
     <!-- Skip to Content for Accessibility -->
     <a href="#main-content" class="skip-to-content font-mono">Skip to Content</a>
@@ -392,7 +514,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main id="main-content" class="relative z-10 pt-32 pb-20 lg:pt-48 lg:pb-32 content-visibility-auto">
+    <main id="main-content" class="relative z-10 pt-32 pb-20 lg:pt-48 lg:pb-32">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             
             <div data-aos="fade-down" data-aos-duration="1000" data-aos-once="true">
@@ -447,7 +569,7 @@
     </main>
 
     <!-- Capabilities Section -->
-    <section id="capabilities" class="py-24 relative z-10 bg-black/30 content-visibility-auto" aria-labelledby="capabilities-heading">
+    <section id="capabilities" class="py-24 relative z-10 bg-black/30" aria-labelledby="capabilities-heading">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 id="capabilities-heading" class="text-3xl md:text-4xl font-bold text-white mb-4">Core System Capabilities</h2>
@@ -543,7 +665,7 @@
     </section>
 
     <!-- Topology Section -->
-    <section id="topology" class="py-24 bg-brand-dark border-y border-white/5 content-visibility-auto" aria-labelledby="topology-heading">
+    <section id="topology" class="py-24 bg-brand-dark border-y border-white/5" aria-labelledby="topology-heading">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 id="topology-heading" class="text-3xl font-bold text-white mb-16 text-center">System Topology</h2>
             
@@ -590,7 +712,7 @@
     </section>
 
     <!-- Forensics Section -->
-    <section id="forensics" class="py-24 bg-black/30 content-visibility-auto" aria-labelledby="forensics-heading">
+    <section id="forensics" class="py-24 bg-black/30" aria-labelledby="forensics-heading">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 id="forensics-heading" class="text-3xl font-bold text-white mb-10 text-center">Anti-Forensic Details</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -615,14 +737,14 @@
     </section>
 
     <!-- Installation Section -->
-    <section id="install" class="py-24 bg-[#09090b] content-visibility-auto" aria-labelledby="install-heading">
+    <section id="install" class="py-24 bg-[#09090b]" aria-labelledby="install-heading">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 id="install-heading" class="text-3xl font-bold text-white mb-8 flex items-center gap-3">
                 <i class="fa-solid fa-terminal text-brand-green" aria-hidden="true"></i> System Initialization
             </h2>
             
             <div class="rounded-lg overflow-hidden border border-white/10 shadow-2xl bg-[#09090b] relative" role="region" aria-label="Terminal interface">
-                <button onclick="copyInstall(this)" class="absolute top-3 right-3 bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded text-xs transition-colors z-10 border border-white/10 touch-target" aria-label="Copy installation command">
+                <button onclick="copyToClipboard('git clone https://github.com/ashardian/OnionSite-Aegis.git && cd OnionSite-Aegis && chmod +x ./install.sh && sudo ./install.sh', this)" class="absolute top-3 right-3 bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded text-xs transition-colors z-10 border border-white/10 touch-target" aria-label="Copy installation command">
                     <i class="fa-regular fa-copy mr-1" aria-hidden="true"></i> Copy
                 </button>
                 <div class="flex items-center px-4 py-2 bg-[#18181b] border-b border-white/10">
@@ -652,11 +774,11 @@
     </section>
 
     <!-- FAQ Section -->
-    <section id="faq" class="py-24 bg-black/30 border-t border-white/5 content-visibility-auto" aria-labelledby="faq-heading">
+    <section id="faq" class="py-24 bg-black/30 border-t border-white/5" aria-labelledby="faq-heading">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 id="faq-heading" class="text-3xl font-bold text-white mb-10 text-center">Frequently Asked Questions</h2>
             <div class="space-y-4" role="region" aria-label="FAQ section">
-                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)" role="button" aria-expanded="false" aria-controls="faq-1">
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleAccordion(this)" role="button" aria-expanded="false" aria-controls="faq-1">
                     <div class="flex justify-between items-center">
                         <h3 class="text-white font-bold">Does this work on Mobile (Termux/NetHunter)?</h3>
                         <i class="fa-solid fa-plus text-brand-green faq-icon" aria-hidden="true"></i>
@@ -665,7 +787,7 @@
                         <p class="text-gray-400 text-sm mt-4 pt-4 leading-relaxed">Yes. The "Bare Metal" installer is optimized for Debian 11+ architectures. You can run a military-grade hidden service directly from a Debian Linux environment on mobile devices using Termux or NetHunter.</p>
                     </div>
                 </div>
-                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)" role="button" aria-expanded="false" aria-controls="faq-2">
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleAccordion(this)" role="button" aria-expanded="false" aria-controls="faq-2">
                     <div class="flex justify-between items-center">
                         <h3 class="text-white font-bold">Can I use this on a Cloud VPS?</h3>
                         <i class="fa-solid fa-plus text-brand-green faq-icon" aria-hidden="true"></i>
@@ -674,7 +796,7 @@
                         <p class="text-gray-400 text-sm mt-4 pt-4 leading-relaxed">Yes. The v9.0 <strong>SSH Safety Valve</strong> allows you to whitelist Port 22 during installation, preventing firewall lockouts on remote servers while maintaining Tor anonymity.</p>
                     </div>
                 </div>
-                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)" role="button" aria-expanded="false" aria-controls="faq-3">
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleAccordion(this)" role="button" aria-expanded="false" aria-controls="faq-3">
                     <div class="flex justify-between items-center">
                         <h3 class="text-white font-bold">Is it really log-free?</h3>
                         <i class="fa-solid fa-plus text-brand-green faq-icon" aria-hidden="true"></i>
@@ -683,7 +805,7 @@
                         <p class="text-gray-400 text-sm mt-4 pt-4 leading-relaxed">Yes. All logs are forced into <code class="font-mono text-xs">tmpfs</code> (RAM). Rebooting physically destroys the data. This amnesic storage system ensures zero forensic trace on disk.</p>
                     </div>
                 </div>
-                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)" role="button" aria-expanded="false" aria-controls="faq-4">
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleAccordion(this)" role="button" aria-expanded="false" aria-controls="faq-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-white font-bold">What if I get a "Onion Site Not Found" error?</h3>
                         <i class="fa-solid fa-plus text-brand-green faq-icon" aria-hidden="true"></i>
@@ -725,199 +847,157 @@
         <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
     </button>
 
-    <!-- JavaScript -->
+    <!-- Security Badge -->
+    <div id="security-badge" class="fixed bottom-4 left-4 bg-black/50 backdrop-blur-sm border border-brand-green/30 rounded-lg px-3 py-2 text-xs font-mono text-brand-green z-30 opacity-50 hover:opacity-100 transition-opacity">
+        🔒 SECURITY ACTIVE
+    </div>
+
+    <!-- JavaScript Libraries -->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <!-- Fixed Loading System Script -->
     <script>
-        // Initialize AOS Animation
-        document.addEventListener('DOMContentLoaded', function() {
-            AOS.init({
-                once: true,
-                offset: 50,
-                duration: 800,
-                easing: 'ease-out-cubic'
-            });
-            
-            // Initialize tooltips
-            initTooltips();
-            
-            // Initialize back to top button
-            initBackToTop();
-            
-            // Initialize keyboard navigation
-            initKeyboardNavigation();
-            
-            // Check if page is loaded inside an iframe
-            if (window.self !== window.top) {
-                document.body.classList.add('iframe-mode');
-            }
-        });
-
-        // Mobile Menu Functions
-        function toggleMenu() {
-            const menu = document.getElementById('mobile-menu');
-            const button = document.querySelector('[aria-controls="mobile-menu"]');
-            const isHidden = menu.classList.contains('translate-x-full');
-            
-            menu.classList.toggle('translate-x-full');
-            menu.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
-            button.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-            
-            if (!isHidden) {
-                document.body.style.overflow = 'hidden';
-                // Focus first item in menu when opened
-                setTimeout(() => {
-                    const firstMenuItem = menu.querySelector('a[role="menuitem"]');
-                    if (firstMenuItem) firstMenuItem.focus();
-                }, 100);
-            } else {
-                document.body.style.overflow = 'auto';
-                // Return focus to menu button when closed
-                button.focus();
-            }
-        }
-
-        // Close mobile menu on ESC key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                const menu = document.getElementById('mobile-menu');
-                if (!menu.classList.contains('translate-x-full')) {
-                    toggleMenu();
-                }
-            }
-        });
-
-        // FAQ Accordion
-        function toggleFaq(element) {
-            const isExpanded = element.classList.contains('active');
-            const content = element.querySelector('.faq-content');
-            const button = element.querySelector('[role="button"]');
-            
-            // Close all other FAQ items
-            document.querySelectorAll('.faq-item.active').forEach(item => {
-                if (item !== element) {
-                    item.classList.remove('active');
-                    item.querySelector('[role="button"]').setAttribute('aria-expanded', 'false');
-                }
-            });
-            
-            // Toggle current FAQ item
-            element.classList.toggle('active');
-            button.setAttribute('aria-expanded', !isExpanded);
-            
-            // Announce state change for screen readers
-            const question = element.querySelector('h3').textContent;
-            const status = !isExpanded ? 'expanded' : 'collapsed';
-            announceToScreenReader(`FAQ question ${status}: ${question}`);
-        }
-
-        // Enhanced copy function
-        function copyInstall(button) {
-            const text = 'git clone https://github.com/ashardian/OnionSite-Aegis.git && cd OnionSite-Aegis && chmod +x ./install.sh && sudo ./install.sh';
-            
-            const copyToClipboard = async () => {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showNotification('Command copied to clipboard!', 'success');
-                    
-                    // Visual feedback
-                    const originalHTML = button.innerHTML;
-                    button.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
-                    button.classList.add('bg-green-900/50', 'border-green-500/30');
-                    button.classList.remove('bg-white/10', 'hover:bg-white/20');
-                    
-                    setTimeout(() => {
-                        button.innerHTML = originalHTML;
-                        button.classList.remove('bg-green-900/50', 'border-green-500/30');
-                        button.classList.add('bg-white/10', 'hover:bg-white/20');
-                    }, 2000);
-                    
-                } catch (err) {
-                    // Fallback for older browsers
-                    const textarea = document.createElement('textarea');
-                    textarea.value = text;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    showNotification('Command copied to clipboard!', 'success');
-                }
-            };
-            
-            copyToClipboard();
-        }
-
-        // Terminal Animation
-        const commands = [
-            { text: "root@aegis:~# git clone https://github.com/ashardian/OnionSite-Aegis.git", delay: 50 },
-            { text: "\nCloning into 'OnionSite-Aegis'...", delay: 20 },
-            { text: "\nremote: Enumerating objects: 127, done.", delay: 20 },
-            { text: "\nremote: Counting objects: 100% (127/127), done.", delay: 20 },
-            { text: "\nremote: Compressing objects: 100% (89/89), done.", delay: 20 },
-            { text: "\nremote: Total 127 (delta 45), reused 102 (delta 30), pack-reused 0", delay: 20 },
-            { text: "\nReceiving objects: 100% (127/127), 45.12 KiB | 2.25 MiB/s, done.", delay: 20 },
-            { text: "\nResolving deltas: 100% (45/45), done.", delay: 20 },
-            { text: "\nroot@aegis:~# cd OnionSite-Aegis", delay: 50 },
-            { text: "\nroot@aegis:~/OnionSite-Aegis# chmod +x ./install.sh", delay: 50 },
-            { text: "\nroot@aegis:~/OnionSite-Aegis# ./install.sh", delay: 50 },
-            { text: "\n\n=== ONIONSITE-AEGIS ARCHITECT v9.0 ===", delay: 20, color: '#00F0FF' },
-            { text: "\n[SYS] Sanitizing Environment... OK", delay: 20, color: '#00F0FF' },
-            { text: "\n[SYS] Detecting Architecture... Debian (Debian Optimization Active)", delay: 20, color: '#FFB800' },
-            { text: "\n[SEC] Initializing Balanced Firewall... OK", delay: 20, color: '#00F0FF' },
-            { text: "\n[DEF] Loading Neural Sentry Engine... ACTIVE", delay: 20, color: '#00DC82' },
-            { text: "\n[LOG] Amnesic Storage Mounted... READY", delay: 20, color: '#FF4E4E' },
-            { text: "\n[NET] Tor Hidden Service Configuring... DONE", delay: 20, color: '#7000FF' },
-            { text: "\n\n>>> SYSTEM ONLINE: 7g4zpv6pcm2j3hbc...xyz.onion <<<", delay: 20, color: '#00DC82' },
-            { text: "\n>>> SSH Safety Valve: PORT 22 WHITELISTED <<<", delay: 20, color: '#FFB800' }
-        ];
-
-        const terminal = document.getElementById('terminal-content');
-        let isTyping = false;
+        // ============================================
+        // FIXED LOADING SYSTEM
+        // ============================================
         
-        async function typeWriter() {
-            if (isTyping) return;
-            isTyping = true;
+        // Global state
+        let pageLoaded = false;
+        let resourcesLoaded = false;
+        let loadingProgress = 0;
+        
+        // Function to simulate progress bar
+        function updateLoadingProgress() {
+            const progressBar = document.getElementById('loading-progress');
+            if (!progressBar) return;
             
-            // Clear terminal first
-            terminal.innerHTML = '';
+            const intervals = [
+                { progress: 10, delay: 100 },
+                { progress: 25, delay: 200 },
+                { progress: 40, delay: 300 },
+                { progress: 60, delay: 200 },
+                { progress: 75, delay: 300 },
+                { progress: 90, delay: 400 },
+                { progress: 100, delay: 200 }
+            ];
             
-            for (let cmd of commands) {
-                const span = document.createElement('span');
-                if (cmd.color) span.style.color = cmd.color;
-                terminal.appendChild(span);
+            let currentIndex = 0;
+            
+            function updateStep() {
+                if (currentIndex >= intervals.length) {
+                    // Progress bar complete, but page might not be ready
+                    checkIfReadyToShowContent();
+                    return;
+                }
                 
-                for (let char of cmd.text) {
-                    span.textContent += char;
-                    await new Promise(r => setTimeout(r, Math.random() * 10 + 10));
-                    terminal.parentElement.scrollTop = terminal.parentElement.scrollHeight;
-                }
-                await new Promise(r => setTimeout(r, cmd.delay * 5));
+                const step = intervals[currentIndex];
+                loadingProgress = step.progress;
+                progressBar.style.width = loadingProgress + '%';
+                currentIndex++;
+                
+                setTimeout(updateStep, step.delay);
             }
             
-            // Add blinking cursor
-            const cursor = document.createElement('span');
-            cursor.className = 'cursor-blink';
-            cursor.textContent = '▋';
-            cursor.setAttribute('aria-hidden', 'true');
-            terminal.appendChild(cursor);
-            
-            isTyping = false;
+            updateStep();
         }
-
-        // Intersection Observer for terminal animation
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !isTyping) {
-                    typeWriter();
-                    observer.disconnect();
-                }
-            });
-        }, { threshold: 0.5 });
         
-        if (terminal) {
-            observer.observe(terminal);
+        // Check if all resources are loaded
+        function checkResourcesLoaded() {
+            // Check if critical resources are loaded
+            const stylesLoaded = document.styleSheets.length > 0;
+            const fontsLoaded = document.fonts ? document.fonts.status === 'loaded' : true;
+            const scriptsLoaded = typeof AOS !== 'undefined';
+            
+            return stylesLoaded && fontsLoaded && scriptsLoaded;
         }
-
-        // Scroll to section function
+        
+        // Hide loading screen when everything is ready
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (!loadingScreen) return;
+            
+            // Add fade-out animation
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.5s ease';
+            
+            // Remove from DOM after animation
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                document.body.classList.add('content-loaded');
+                
+                // Initialize animations after page is visible
+                setTimeout(() => {
+                    if (typeof AOS !== 'undefined') {
+                        AOS.init({
+                            once: true,
+                            offset: 50,
+                            duration: 600,
+                            easing: 'ease-out-cubic',
+                            disable: window.innerWidth < 768
+                        });
+                    }
+                }, 100);
+                
+                // Initialize terminal animation
+                initTerminalAnimation();
+                
+                console.log('%c✅ Page loaded successfully', 'color: #00DC82; font-weight: bold;');
+            }, 500);
+        }
+        
+        // Check if we're ready to show content
+        function checkIfReadyToShowContent() {
+            // If page is loaded and progress is at least 90%
+            if (pageLoaded && loadingProgress >= 90) {
+                // Double-check resources
+                if (checkResourcesLoaded()) {
+                    resourcesLoaded = true;
+                    hideLoadingScreen();
+                } else {
+                    // Wait a bit more for resources
+                    setTimeout(checkIfReadyToShowContent, 100);
+                }
+            }
+        }
+        
+        // Mark page as loaded
+        function markPageLoaded() {
+            pageLoaded = true;
+            checkIfReadyToShowContent();
+        }
+        
+        // Initialize loading system
+        function initLoadingSystem() {
+            // Start progress bar
+            updateLoadingProgress();
+            
+            // Mark page as loaded when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', markPageLoaded);
+            } else {
+                markPageLoaded();
+            }
+            
+            // Also check when window loads (for images and other resources)
+            window.addEventListener('load', () => {
+                pageLoaded = true;
+                resourcesLoaded = true;
+                checkIfReadyToShowContent();
+            });
+            
+            // Fallback: hide loading screen after 3 seconds max
+            setTimeout(() => {
+                if (!resourcesLoaded) {
+                    console.warn('Forcing page display after timeout');
+                    hideLoadingScreen();
+                }
+            }, 3000);
+        }
+        
+        // ============================================
+        // UI FUNCTIONS
+        // ============================================
+        
         function scrollToSection(sectionId) {
             const element = document.getElementById(sectionId);
             if (element) {
@@ -930,16 +1010,185 @@
                     behavior: 'smooth'
                 });
                 
-                // Focus the section for accessibility
+                // Focus for accessibility
                 element.setAttribute('tabindex', '-1');
                 element.focus();
                 setTimeout(() => element.removeAttribute('tabindex'), 1000);
             }
         }
-
-        // Back to Top Button
+        
+        function toggleAccordion(element) {
+            const isExpanded = element.classList.contains('active');
+            const content = element.querySelector('.faq-content');
+            const button = element.querySelector('[role="button"]');
+            
+            // Close other FAQ items
+            document.querySelectorAll('.faq-item.active').forEach(item => {
+                if (item !== element) {
+                    item.classList.remove('active');
+                    item.querySelector('[role="button"]').setAttribute('aria-expanded', 'false');
+                }
+            });
+            
+            // Toggle current item
+            element.classList.toggle('active');
+            button.setAttribute('aria-expanded', !isExpanded);
+        }
+        
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Visual feedback
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
+                button.classList.add('bg-green-900/50', 'border-green-500/30');
+                button.classList.remove('bg-white/10', 'hover:bg-white/20');
+                
+                // Show notification
+                showNotification('Command copied to clipboard!', 'success');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('bg-green-900/50', 'border-green-500/30');
+                    button.classList.add('bg-white/10', 'hover:bg-white/20');
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showNotification('Command copied to clipboard!', 'success');
+            });
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg z-50 transform transition-all duration-300 translate-x-full ${type === 'success' ? 'bg-green-900/90 text-green-100' : 'bg-blue-900/90 text-blue-100'}`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'} mr-2"></i>
+                    <span class="text-sm">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.remove('translate-x-full'), 10);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const button = document.querySelector('[aria-controls="mobile-menu"]');
+            
+            menu.classList.toggle('open');
+            menu.classList.toggle('translate-x-full');
+            
+            const isOpen = menu.classList.contains('open');
+            menu.setAttribute('aria-hidden', !isOpen);
+            button.setAttribute('aria-expanded', isOpen);
+            
+            if (isOpen) {
+                document.body.style.overflow = 'hidden';
+                setTimeout(() => {
+                    const firstItem = menu.querySelector('a[role="menuitem"]');
+                    if (firstItem) firstItem.focus();
+                }, 100);
+            } else {
+                document.body.style.overflow = 'auto';
+                button.focus();
+            }
+        }
+        
+        // ============================================
+        // TERMINAL ANIMATION
+        // ============================================
+        
+        function initTerminalAnimation() {
+            const commands = [
+                { text: "root@aegis:~# git clone https://github.com/ashardian/OnionSite-Aegis.git", delay: 50 },
+                { text: "\nCloning into 'OnionSite-Aegis'...", delay: 20 },
+                { text: "\nremote: Enumerating objects: 127, done.", delay: 20 },
+                { text: "\nremote: Counting objects: 100% (127/127), done.", delay: 20 },
+                { text: "\nremote: Compressing objects: 100% (89/89), done.", delay: 20 },
+                { text: "\nremote: Total 127 (delta 45), reused 102 (delta 30), pack-reused 0", delay: 20 },
+                { text: "\nReceiving objects: 100% (127/127), 45.12 KiB | 2.25 MiB/s, done.", delay: 20 },
+                { text: "\nResolving deltas: 100% (45/45), done.", delay: 20 },
+                { text: "\nroot@aegis:~# cd OnionSite-Aegis", delay: 50 },
+                { text: "\nroot@aegis:~/OnionSite-Aegis# chmod +x ./install.sh", delay: 50 },
+                { text: "\nroot@aegis:~/OnionSite-Aegis# ./install.sh", delay: 50 },
+                { text: "\n\n=== ONIONSITE-AEGIS ARCHITECT v9.0 ===", delay: 20, color: '#00F0FF' },
+                { text: "\n[SYS] Sanitizing Environment... OK", delay: 20, color: '#00F0FF' },
+                { text: "\n[SYS] Detecting Architecture... Debian (Debian Optimization Active)", delay: 20, color: '#FFB800' },
+                { text: "\n[SEC] Initializing Balanced Firewall... OK", delay: 20, color: '#00F0FF' },
+                { text: "\n[DEF] Loading Neural Sentry Engine... ACTIVE", delay: 20, color: '#00DC82' },
+                { text: "\n[LOG] Amnesic Storage Mounted... READY", delay: 20, color: '#FF4E4E' },
+                { text: "\n[NET] Tor Hidden Service Configuring... DONE", delay: 20, color: '#7000FF' },
+                { text: "\n\n>>> SYSTEM ONLINE: 7g4zpv6pcm2j3hbc...xyz.onion <<<", delay: 20, color: '#00DC82' },
+                { text: "\n>>> SSH Safety Valve: PORT 22 WHITELISTED <<<", delay: 20, color: '#FFB800' }
+            ];
+            
+            const terminal = document.getElementById('terminal-content');
+            if (!terminal) return;
+            
+            let isTyping = false;
+            
+            // Observer to start animation when terminal is in view
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !isTyping) {
+                        typeWriter();
+                        observer.disconnect();
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            observer.observe(terminal);
+            
+            async function typeWriter() {
+                if (isTyping) return;
+                isTyping = true;
+                
+                // Clear terminal first
+                terminal.innerHTML = '';
+                
+                for (let cmd of commands) {
+                    const span = document.createElement('span');
+                    if (cmd.color) span.style.color = cmd.color;
+                    terminal.appendChild(span);
+                    
+                    for (let char of cmd.text) {
+                        span.textContent += char;
+                        await new Promise(r => setTimeout(r, Math.random() * 10 + 10));
+                        terminal.parentElement.scrollTop = terminal.parentElement.scrollHeight;
+                    }
+                    await new Promise(r => setTimeout(r, cmd.delay * 5));
+                }
+                
+                // Add blinking cursor
+                const cursor = document.createElement('span');
+                cursor.className = 'cursor-blink';
+                cursor.textContent = '▋';
+                cursor.setAttribute('aria-hidden', 'true');
+                terminal.appendChild(cursor);
+                
+                isTyping = false;
+            }
+        }
+        
+        // ============================================
+        // BACK TO TOP BUTTON
+        // ============================================
+        
         function initBackToTop() {
             const backToTopButton = document.getElementById('back-to-top');
+            if (!backToTopButton) return;
             
             window.addEventListener('scroll', () => {
                 if (window.pageYOffset > 300) {
@@ -951,749 +1200,138 @@
                 }
             });
         }
-
-        // Screen Reader Announcements
-        function announceToScreenReader(message) {
-            const announcement = document.createElement('div');
-            announcement.setAttribute('aria-live', 'polite');
-            announcement.setAttribute('aria-atomic', 'true');
-            announcement.classList.add('sr-only');
-            announcement.textContent = message;
-            document.body.appendChild(announcement);
+        
+        // ============================================
+        // SECURITY SYSTEM
+        // ============================================
+        
+        function initSecuritySystem() {
+            // Right-click blocking
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showNotification('Right-click disabled for security', 'warning');
+                return false;
+            });
             
-            setTimeout(() => {
-                document.body.removeChild(announcement);
-            }, 1000);
-        }
-
-        // Notification System
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg z-50 transform transition-all duration-300 translate-x-full ${type === 'success' ? 'bg-green-900/90 text-green-100' : 'bg-blue-900/90 text-blue-100'}`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'} mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Animate in
-            setTimeout(() => {
-                notification.classList.remove('translate-x-full');
-            }, 10);
-            
-            // Remove after 3 seconds
-            setTimeout(() => {
-                notification.classList.add('translate-x-full');
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 300);
-            }, 3000);
-        }
-
-        // Keyboard Navigation
-        function initKeyboardNavigation() {
+            // Keyboard shortcuts blocking
             document.addEventListener('keydown', (e) => {
-                // Skip if user is typing in an input
+                // Block F12
+                if (e.key === 'F12') {
+                    e.preventDefault();
+                    showNotification('Developer tools access restricted', 'warning');
+                    return false;
+                }
+                
+                // Block DevTools shortcuts
+                const blockedCombos = [
+                    { ctrl: true, shift: true, key: 'I' },
+                    { ctrl: true, shift: true, key: 'J' },
+                    { ctrl: true, shift: true, key: 'C' },
+                    { ctrl: true, key: 'U' },
+                    { meta: true, shift: true, key: 'I' },
+                    { meta: true, shift: true, key: 'J' },
+                    { meta: true, shift: true, key: 'C' },
+                    { meta: true, key: 'U' }
+                ];
+                
+                for (const combo of blockedCombos) {
+                    const ctrlMatch = combo.ctrl ? (e.ctrlKey || e.metaKey) : true;
+                    const shiftMatch = combo.shift ? e.shiftKey : true;
+                    const keyMatch = e.key.toUpperCase() === combo.key.toUpperCase();
+                    
+                    if (ctrlMatch && shiftMatch && keyMatch) {
+                        e.preventDefault();
+                        showNotification('Keyboard shortcut disabled', 'warning');
+                        return false;
+                    }
+                }
+                
+                // Block save/print
+                if ((e.ctrlKey || e.metaKey) && ['S', 'P', 's', 'p'].includes(e.key)) {
+                    e.preventDefault();
+                    showNotification(`${e.key.toUpperCase()} function disabled`, 'warning');
+                    return false;
+                }
+            });
+            
+            // Make selection harder
+            document.addEventListener('selectstart', (e) => {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Block copy
+            document.addEventListener('copy', (e) => {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Security badge interaction
+            const securityBadge = document.getElementById('security-badge');
+            if (securityBadge) {
+                securityBadge.addEventListener('click', () => {
+                    showNotification('Security System: Active\nAll protections enabled', 'info');
+                });
+            }
+            
+            console.log('%c🔒 Security System Initialized', 'color: #00F0FF; font-weight: bold;');
+        }
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        // Start everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize loading system first
+            initLoadingSystem();
+            
+            // Initialize back to top button
+            initBackToTop();
+            
+            // Initialize security system
+            setTimeout(() => {
+                initSecuritySystem();
+            }, 1000);
+            
+            // Close mobile menu on ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const menu = document.getElementById('mobile-menu');
+                    if (menu.classList.contains('open')) {
+                        toggleMenu();
+                    }
+                }
+            });
+            
+            // Keyboard shortcuts for navigation
+            document.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
                 
-                // 'I' key to focus installation section
                 if (e.key === 'i' || e.key === 'I') {
                     e.preventDefault();
                     scrollToSection('install');
                 }
-                
-                // 'C' key to focus capabilities
                 if (e.key === 'c' || e.key === 'C') {
                     e.preventDefault();
                     scrollToSection('capabilities');
                 }
             });
-        }
-
-        // Tooltip initialization
-        function initTooltips() {
-            const tooltipElements = document.querySelectorAll('[data-tooltip]');
-            tooltipElements.forEach(el => {
-                el.addEventListener('mouseenter', showTooltip);
-                el.addEventListener('mouseleave', hideTooltip);
-                el.addEventListener('focus', showTooltip);
-                el.addEventListener('blur', hideTooltip);
-            });
-        }
-
-        function showTooltip(e) {
-            const tooltipText = this.getAttribute('data-tooltip');
-            if (!tooltipText) return;
-            
-            const tooltip = document.createElement('div');
-            tooltip.className = 'absolute z-50 px-2 py-1 text-xs bg-gray-900 text-white rounded-md whitespace-nowrap';
-            tooltip.textContent = tooltipText;
-            tooltip.id = 'current-tooltip';
-            
-            document.body.appendChild(tooltip);
-            
-            const rect = this.getBoundingClientRect();
-            tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
-            tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-        }
-
-        function hideTooltip() {
-            const tooltip = document.getElementById('current-tooltip');
-            if (tooltip) {
-                tooltip.remove();
-            }
-        }
-
-        // Performance optimization: Defer non-critical CSS
-        function loadDeferredStyles() {
-            const links = document.querySelectorAll('link[rel="preload"][as="style"]');
-            links.forEach(link => {
-                if (link.onload) link.onload();
-            });
-        }
+        });
         
-        // Load deferred styles when page is idle
-        if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(loadDeferredStyles);
-        } else {
-            window.addEventListener('load', loadDeferredStyles);
-        }
-
-        // Error handling for failed resources
-        window.addEventListener('error', function(e) {
-            console.warn('Resource failed to load:', e.target.src || e.target.href);
-        }, true);
+        // Fallback: make sure loading screen hides if something goes wrong
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen && loadingScreen.style.display !== 'none') {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        document.body.classList.add('content-loaded');
+                    }, 500);
+                }
+            }, 3000); // Max 3 seconds wait
+        });
     </script>
-    <script>
-// ============================================
-// SECURITY LAYER - DEV TOOLS & INSPECTION BLOCKER
-// ============================================
-
-(function() {
-    'use strict';
-    
-    // Configuration
-    const SECURITY_CONFIG = {
-        debug: false, // Set to true to see console logs for debugging
-        enableRightClickBlock: true,
-        enableDevToolsBlock: true,
-        enableSourceBlock: true,
-        enableKeyCombinationBlock: true,
-        enableElementInspectionBlock: true,
-        showNotifications: true,
-        notificationDuration: 3000,
-        allowSelectAndCopy: false, // Allow text selection and copy if needed
-        allowedIPs: [] // Add IPs to bypass security (for admin use)
-    };
-
-    // Security Logger
-    const SecurityLogger = {
-        log: function(message, type = 'info') {
-            if (SECURITY_CONFIG.debug) {
-                const colors = {
-                    info: '#00F0FF',
-                    warn: '#FFB800',
-                    error: '#FF4E4E',
-                    success: '#00DC82'
-                };
-                console.log(`%c[SECURITY] ${message}`, `color: ${colors[type] || '#FFFFFF'}; font-weight: bold;`);
-            }
-        }
-    };
-
-    // Notification System
-    const SecurityNotification = {
-        show: function(message, type = 'warning') {
-            if (!SECURITY_CONFIG.showNotifications) return;
-            
-            const notification = document.createElement('div');
-            notification.className = 'security-notification fixed top-4 right-4 px-4 py-3 rounded-lg z-[9999] transform transition-all duration-300 translate-x-full';
-            
-            const bgColor = type === 'warning' ? 'bg-yellow-900/90' : 'bg-red-900/90';
-            const textColor = type === 'warning' ? 'text-yellow-100' : 'text-red-100';
-            const icon = type === 'warning' ? 'fa-exclamation-triangle' : 'fa-shield-halved';
-            
-            notification.className += ` ${bgColor} ${textColor}`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fa-solid ${icon} mr-2"></i>
-                    <span class="text-sm">${message}</span>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.classList.remove('translate-x-full');
-            }, 10);
-            
-            setTimeout(() => {
-                notification.classList.add('translate-x-full');
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }, SECURITY_CONFIG.notificationDuration);
-        }
-    };
-
-    // Main Security Controller
-    class SecurityController {
-        constructor() {
-            this.initTime = Date.now();
-            this.attempts = 0;
-            this.maxAttempts = 5;
-            this.blocked = false;
-            this.init();
-        }
-
-        init() {
-            SecurityLogger.log('Security layer initialized', 'success');
-            
-            // Apply all security measures
-            if (SECURITY_CONFIG.enableRightClickBlock) this.blockRightClick();
-            if (SECURITY_CONFIG.enableDevToolsBlock) this.blockDevTools();
-            if (SECURITY_CONFIG.enableSourceBlock) this.blockSourceView();
-            if (SECURITY_CONFIG.enableKeyCombinationBlock) this.blockKeyCombinations();
-            if (SECURITY_CONFIG.enableElementInspectionBlock) this.blockElementInspection();
-            
-            // Add CSS for security elements
-            this.addSecurityStyles();
-        }
-
-        blockRightClick() {
-            document.addEventListener('contextmenu', (e) => {
-                if (this.checkAllowance()) return;
-                
-                e.preventDefault();
-                SecurityLogger.log('Right-click blocked', 'warn');
-                SecurityNotification.show('Right-click disabled for security', 'warning');
-                return false;
-            });
-            
-            // Also block long press on touch devices
-            document.addEventListener('touchstart', (e) => {
-                if (e.touches.length > 1) {
-                    e.preventDefault();
-                    SecurityLogger.log('Multi-touch blocked', 'warn');
-                }
-            }, { passive: false });
-            
-            document.addEventListener('touchend', (e) => {
-                const touchDuration = e.timeStamp - this.initTime;
-                if (touchDuration > 1000) { // Long press
-                    e.preventDefault();
-                    SecurityLogger.log('Long press blocked', 'warn');
-                    SecurityNotification.show('Long press disabled', 'warning');
-                }
-            }, { passive: false });
-        }
-
-        blockDevTools() {
-            // Detect devtools opening via console.log interception
-            const originalConsoleLog = console.log;
-            const originalConsoleDir = console.dir;
-            
-            console.log = function(...args) {
-                SecurityLogger.log('Console access attempt detected', 'warn');
-                SecurityNotification.show('Developer tools access restricted', 'warning');
-                return originalConsoleLog.apply(console, ['[SECURITY] Console access restricted']);
-            };
-            
-            console.dir = function(...args) {
-                SecurityLogger.log('Console.dir access attempt detected', 'warn');
-                return originalConsoleDir.apply(console, ['[SECURITY] Console access restricted']);
-            };
-
-            // Detect devtools via debugger
-            setInterval(() => {
-                const startTime = performance.now();
-                debugger;
-                const endTime = performance.now();
-                
-                if (endTime - startTime > 100) {
-                    this.handleViolation('DevTools detected');
-                    window.location.reload(); // Force reload if debugger detected
-                }
-            }, 1000);
-
-            // Detect window resize (devtools opening)
-            let lastWidth = window.innerWidth;
-            window.addEventListener('resize', () => {
-                const currentWidth = window.innerWidth;
-                if (Math.abs(currentWidth - lastWidth) > 100) {
-                    SecurityLogger.log('Suspicious window resize detected', 'warn');
-                }
-                lastWidth = currentWidth;
-            });
-        }
-
-        blockKeyCombinations() {
-            document.addEventListener('keydown', (e) => {
-                // Block F12
-                if (e.key === 'F12') {
-                    e.preventDefault();
-                    this.handleViolation('F12 pressed');
-                    return false;
-                }
-
-                // Block Ctrl+Shift+I (Cmd+Shift+I on Mac)
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
-                    e.preventDefault();
-                    this.handleViolation('Ctrl+Shift+I pressed');
-                    return false;
-                }
-
-                // Block Ctrl+Shift+J (Cmd+Shift+J on Mac)
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
-                    e.preventDefault();
-                    this.handleViolation('Ctrl+Shift+J pressed');
-                    return false;
-                }
-
-                // Block Ctrl+Shift+C (Cmd+Shift+C on Mac)
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
-                    e.preventDefault();
-                    this.handleViolation('Ctrl+Shift+C pressed');
-                    return false;
-                }
-
-                // Block Ctrl+U (Cmd+U on Mac) - View source
-                if ((e.ctrlKey || e.metaKey) && (e.key === 'U' || e.key === 'u')) {
-                    e.preventDefault();
-                    this.handleViolation('Ctrl+U pressed');
-                    return false;
-                }
-
-                // Block Ctrl+S (Cmd+S on Mac) - Save page
-                if ((e.ctrlKey || e.metaKey) && (e.key === 'S' || e.key === 's')) {
-                    e.preventDefault();
-                    SecurityLogger.log('Page save attempt blocked', 'warn');
-                    return false;
-                }
-
-                // Block Ctrl+P (Cmd+P on Mac) - Print
-                if ((e.ctrlKey || e.metaKey) && (e.key === 'P' || e.key === 'p')) {
-                    e.preventDefault();
-                    SecurityNotification.show('Printing disabled for security', 'warning');
-                    return false;
-                }
-            });
-        }
-
-        blockSourceView() {
-            // Prevent viewing source via browser menu
-            document.onkeydown = function(e) {
-                if (e.keyCode === 123) { // F12
-                    return false;
-                }
-                if (e.ctrlKey && e.shiftKey && e.keyCode === 73) { // Ctrl+Shift+I
-                    return false;
-                }
-                if (e.ctrlKey && e.shiftKey && e.keyCode === 74) { // Ctrl+Shift+J
-                    return false;
-                }
-                if (e.ctrlKey && e.keyCode === 85) { // Ctrl+U
-                    return false;
-                }
-            };
-
-            // Block view-source: URLs
-            if (window.location.protocol === 'view-source:') {
-                window.location.href = window.location.href.replace('view-source:', '');
-            }
-
-            // Block iframe embedding
-            if (window.self !== window.top) {
-                SecurityLogger.log('Page loaded in iframe - security risk', 'error');
-                SecurityNotification.show('Embedding not allowed', 'warning');
-                window.top.location = window.self.location;
-            }
-        }
-
-        blockElementInspection() {
-            // Disable text selection if configured
-            if (!SECURITY_CONFIG.allowSelectAndCopy) {
-                document.addEventListener('selectstart', (e) => {
-                    if (this.checkAllowance()) return;
-                    
-                    e.preventDefault();
-                    return false;
-                });
-                
-                // Disable copy
-                document.addEventListener('copy', (e) => {
-                    if (this.checkAllowance()) return;
-                    
-                    e.preventDefault();
-                    SecurityLogger.log('Copy attempt blocked', 'warn');
-                    return false;
-                });
-                
-                // Disable cut
-                document.addEventListener('cut', (e) => {
-                    e.preventDefault();
-                    return false;
-                });
-                
-                // Disable drag and drop
-                document.addEventListener('dragstart', (e) => {
-                    e.preventDefault();
-                    return false;
-                });
-            }
-
-            // Make it harder to inspect elements
-            Object.defineProperty(document, 'hidden', {
-                get: function() {
-                    return false;
-                }
-            });
-
-            Object.defineProperty(document, 'visibilityState', {
-                get: function() {
-                    return 'visible';
-                }
-            });
-
-            // Override common inspection methods
-            const originalQuerySelector = Document.prototype.querySelector;
-            Document.prototype.querySelector = function() {
-                SecurityLogger.log('Element inspection attempt', 'warn');
-                return originalQuerySelector.apply(this, arguments);
-            };
-        }
-
-        handleViolation(reason) {
-            this.attempts++;
-            SecurityLogger.log(`Security violation: ${reason} (Attempt ${this.attempts}/${this.maxAttempts})`, 'error');
-            
-            SecurityNotification.show(`Security restriction: ${reason}`, 'warning');
-            
-            if (this.attempts >= this.maxAttempts) {
-                this.blocked = true;
-                SecurityLogger.log('Maximum violation attempts reached - enforcing strict mode', 'error');
-                SecurityNotification.show('Maximum security violations reached', 'warning');
-                
-                // Apply stricter measures
-                this.applyStrictMeasures();
-                
-                // Optional: Redirect or show warning
-                // window.location.href = '/security-warning.html';
-            }
-        }
-
-        applyStrictMeasures() {
-            // Disable all interaction
-            document.body.style.pointerEvents = 'none';
-            
-            // Add overlay
-            const overlay = document.createElement('div');
-            overlay.id = 'security-overlay';
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.95);
-                z-index: 999999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-family: monospace;
-                text-align: center;
-                backdrop-filter: blur(10px);
-            `;
-            overlay.innerHTML = `
-                <div style="padding: 2rem; max-width: 600px;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🛡️</div>
-                    <h2 style="color: #FF4E4E; margin-bottom: 1rem;">SECURITY LOCKDOWN</h2>
-                    <p style="color: #00F0FF; margin-bottom: 1.5rem;">
-                        Multiple security violations detected. System access restricted.
-                    </p>
-                    <p style="color: #888; font-size: 0.9rem;">
-                        This interface is protected by OnionSite-Aegis v9.0 Security Layer
-                    </p>
-                </div>
-            `;
-            
-            document.body.appendChild(overlay);
-            
-            // Prevent any further interaction
-            document.addEventListener('keydown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }, true);
-            
-            document.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }, true);
-        }
-
-        checkAllowance() {
-            // Check if current IP is in allowed list
-            // This would require server-side implementation
-            return false;
-        }
-
-        addSecurityStyles() {
-            const style = document.createElement('style');
-            style.textContent = `
-                .security-notification {
-                    animation: securityPulse 2s infinite;
-                }
-                
-                @keyframes securityPulse {
-                    0%, 100% { box-shadow: 0 0 5px rgba(255, 184, 0, 0.5); }
-                    50% { box-shadow: 0 0 20px rgba(255, 184, 0, 0.8); }
-                }
-                
-                /* Make it harder to select elements */
-                * {
-                    user-select: ${SECURITY_CONFIG.allowSelectAndCopy ? 'auto' : 'none'} !important;
-                    -webkit-user-select: ${SECURITY_CONFIG.allowSelectAndCopy ? 'auto' : 'none'} !important;
-                    -moz-user-select: ${SECURITY_CONFIG.allowSelectAndCopy ? 'auto' : 'none'} !important;
-                    -ms-user-select: ${SECURITY_CONFIG.allowSelectAndCopy ? 'auto' : 'none'} !important;
-                }
-                
-                /* Allow text selection in specific areas if needed */
-                .allow-select {
-                    user-select: text !important;
-                    -webkit-user-select: text !important;
-                    -moz-user-select: text !important;
-                    -ms-user-select: text !important;
-                }
-                
-                /* Hide elements from DOM inspection */
-                [data-secure] {
-                    position: relative;
-                }
-                
-                [data-secure]::before {
-                    content: '[SECURED CONTENT]';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.9);
-                    color: #00F0FF;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-family: 'JetBrains Mono', monospace;
-                    font-size: 0.8rem;
-                    z-index: 1000;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-
-    // Initialize security when DOM is loaded
-    document.addEventListener('DOMContentLoaded', () => {
-        // Small delay to ensure everything is loaded
-        setTimeout(() => {
-            window.securityController = new SecurityController();
-            
-            // Add security badge to page
-            const securityBadge = document.createElement('div');
-            securityBadge.id = 'security-badge';
-            securityBadge.style.cssText = `
-                position: fixed;
-                bottom: 10px;
-                left: 10px;
-                background: rgba(0, 240, 255, 0.1);
-                border: 1px solid rgba(0, 240, 255, 0.3);
-                border-radius: 4px;
-                padding: 4px 8px;
-                font-family: 'JetBrains Mono', monospace;
-                font-size: 10px;
-                color: #00F0FF;
-                z-index: 10000;
-                opacity: 0.7;
-                pointer-events: none;
-            `;
-            securityBadge.textContent = 'SECURITY: ACTIVE';
-            document.body.appendChild(securityBadge);
-        }, 1000);
-    });
-
-    // Additional protection against iframe busting
-    if (window.top !== window.self) {
-        window.top.location = window.self.location;
-    }
-
-    // Protection against cloning
-    Object.defineProperty(document, 'cloneNode', {
-        value: function() {
-            SecurityLogger.log('Clone attempt detected', 'warn');
-            return this;
-        }
-    });
-
-    // Protection against saving
-    window.addEventListener('beforeunload', (e) => {
-        SecurityLogger.log('Page unload attempt', 'info');
-    });
-
-    // Prevent caching sensitive data
-    window.addEventListener('pageshow', (e) => {
-        if (e.persisted) {
-            SecurityLogger.log('Page loaded from cache - refreshing', 'warn');
-            window.location.reload();
-        }
-    });
-
-    // Log security initialization
-    SecurityLogger.log('Advanced security layer loaded successfully', 'success');
-})();
-
-// ============================================
-// ADDITIONAL OBFUSCATION LAYER
-// ============================================
-
-// Obfuscate critical functions
-(function() {
-    // Create fake console methods
-    const fakeConsole = {
-        log: function() {},
-        warn: function() {},
-        error: function() {},
-        info: function() {},
-        debug: function() {}
-    };
-    
-    // Override console methods in a way that's hard to trace
-    setTimeout(() => {
-        const consoleMethods = ['log', 'warn', 'error', 'info', 'debug', 'dir', 'table'];
-        consoleMethods.forEach(method => {
-            const original = console[method];
-            console[method] = function(...args) {
-                // Only allow specific patterns
-                if (args[0] && typeof args[0] === 'string' && args[0].includes('[SECURITY]')) {
-                    return original.apply(this, args);
-                }
-                // Block everything else
-                return fakeConsole[method].apply(this, args);
-            };
-        });
-    }, 500);
-    
-    // Obfuscate window properties
-    const originalWindow = window;
-    Object.defineProperty(window, 'window', {
-        get: function() {
-            return originalWindow;
-        },
-        set: function(value) {
-            // Prevent modification
-            return originalWindow;
-        }
-    });
-})();
-
-// ============================================
-// ANTI-DEBUGGING TECHNIQUES
-// ============================================
-
-(function() {
-    // Debugger detection loop
-    function detectDebugger() {
-        const start = new Date().getTime();
-        debugger;
-        const end = new Date().getTime();
-        
-        if (end - start > 100) {
-            // Debugger detected
-            document.body.innerHTML = '<div style="padding: 2rem; text-align: center; color: white; font-family: monospace;">' +
-                '<h1 style="color: #FF4E4E;">⚠️ SECURITY ALERT ⚠️</h1>' +
-                '<p>Debugging tools detected. Access denied.</p>' +
-                '</div>';
-            window.stop();
-        }
-    }
-    
-    // Run periodically
-    setInterval(detectDebugger, 1000);
-    
-    // Also run on focus (devtools often take focus)
-    window.addEventListener('focus', detectDebugger);
-})();
-
-// ============================================
-// ELEMENT PROTECTION
-// ============================================
-
-// Protect specific elements
-document.addEventListener('DOMContentLoaded', () => {
-    // Add protection to sensitive elements
-    const sensitiveElements = document.querySelectorAll('code, pre, .terminal, .glass-card');
-    sensitiveElements.forEach(el => {
-        el.setAttribute('data-secure', 'true');
-        
-        // Add event listeners to prevent inspection
-        el.addEventListener('mouseover', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.stopPropagation();
-                SecurityNotification.show('Element inspection restricted', 'warning');
-            }
-        });
-    });
-    
-    // Make it harder to remove event listeners
-    const originalRemoveEventListener = EventTarget.prototype.removeEventListener;
-    EventTarget.prototype.removeEventListener = function(type, listener, options) {
-        // Prevent removal of security event listeners
-        if (type.includes('contextmenu') || type.includes('keydown') || type.includes('security')) {
-            return;
-        }
-        return originalRemoveEventListener.call(this, type, listener, options);
-    };
-});
-
-// ============================================
-// FINAL SECURITY CHECK
-// ============================================
-
-// Verify security is active
-setTimeout(() => {
-    if (typeof window.securityController === 'undefined') {
-        // Security not loaded - take action
-        document.body.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: #020203;
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-family: 'JetBrains Mono', monospace;
-                text-align: center;
-                z-index: 9999999;
-            ">
-                <div style="padding: 2rem; border: 2px solid #FF4E4E; border-radius: 10px;">
-                    <h1 style="color: #FF4E4E; margin-bottom: 1rem;">🔒 SECURITY SYSTEM OFFLINE</h1>
-                    <p style="color: #00F0FF;">Security layer failed to load.</p>
-                    <p style="color: #888; margin-top: 1rem; font-size: 0.9rem;">Please refresh the page securely.</p>
-                </div>
-            </div>
-        `;
-    }
-}, 2000);
-</script>
 </body>
 </html>
