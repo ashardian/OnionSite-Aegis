@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnionSite-Aegis | v9.0 Architect Edition</title>
+    <meta name="description" content="Military-Grade Tor Hidden Service Orchestrator. Optimized for Docker, Bare Metal Architectures.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            dark: '#020203',
+                            card: '#0A0A0C',
+                            border: '#1F1F24',
+                            green: '#00F0FF', 
+                            purple: '#7000FF',
+                            success: '#00DC82',
+                            danger: '#FF4E4E',
+                            warning: '#FFB800'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scan 10s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { backgroundPosition: '0% 0%' },
+                            '100%': { backgroundPosition: '0% 100%' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #020203;
+            color: #e4e4e7;
+            overflow-x: hidden;
+        }
+
+        /* Tactical Grid Background */
+        .tech-bg {
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(10, 10, 14, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-card {
+            background: rgba(14, 14, 18, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            border-color: rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.1);
+            transform: translateY(-5px);
+        }
+
+        /* Mobile Optimization: Touch Targets */
+        .touch-target {
+            min-height: 48px;
+        }
+
+        /* Accordion Animations */
+        .faq-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .faq-item.active .faq-content {
+            max-height: 500px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+            color: #FF4E4E;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020203; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00F0FF; }
+
+        /* Text Gradient */
+        .text-gradient {
+            background: linear-gradient(135deg, #00F0FF 0%, #00DC82 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-brand-green selection:text-black tech-bg">
+
+    <div id="mobile-menu" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl transform translate-x-full transition-transform duration-300 md:hidden overflow-y-auto">
+        <div class="p-6 min-h-screen flex flex-col">
+            <div class="flex justify-between items-center mb-10 border-b border-white/10 pb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-shield-halved text-brand-green text-2xl"></i>
+                    <span class="text-xl font-bold text-white tracking-wide">COMMAND MENU</span>
+                </div>
+                <button onclick="toggleMenu()" class="text-gray-400 hover:text-white text-3xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-8 flex-grow">
+                <div>
+                    <h4 class="text-brand-green text-xs font-mono uppercase tracking-[0.2em] mb-4">Modules</h4>
+                    <a href="#capabilities" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-green pl-4 transition-all">Neural Sentry</a>
+                    <a href="#capabilities" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-green pl-4 transition-all">Balanced Firewall</a>
+                    <a href="#capabilities" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-green pl-4 transition-all">SSH Valve</a>
+                </div>
+
+                <div>
+                    <h4 class="text-brand-purple text-xs font-mono uppercase tracking-[0.2em] mb-4">Deployment</h4>
+                    <a href="#install" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-purple pl-4 transition-all">Bare Metal</a>
+                    <a href="#install" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-purple pl-4 transition-all">Docker Container</a>
+                </div>
+
+                <div>
+                    <h4 class="text-brand-success text-xs font-mono uppercase tracking-[0.2em] mb-4">Intel</h4>
+                    <a href="#topology" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-success pl-4 transition-all">Topology</a>
+                    <a href="#forensics" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-success pl-4 transition-all">Anti-Forensics</a>
+                    <a href="#faq" onclick="toggleMenu()" class="block py-3 text-xl text-gray-300 hover:text-white border-l-2 border-transparent hover:border-brand-success pl-4 transition-all">FAQ</a>
+                </div>
+            </div>
+
+            <a href="https://github.com/ashardian/OnionSite-Aegis" target="_blank" class="mt-8 block w-full py-5 text-center rounded-xl bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-all">
+                <i class="fab fa-github mr-2"></i> Source Code
+            </a>
+        </div>
+    </div>
+
+    <nav class="fixed w-full z-50 transition-all duration-300 border-b border-white/5 bg-brand-dark/90 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-20">
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="relative w-10 h-10 flex items-center justify-center bg-brand-green/10 rounded-lg border border-brand-green/20 group-hover:border-brand-green transition-all">
+                        <i class="fa-solid fa-shield-halved text-brand-green text-xl group-hover:animate-pulse"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-lg tracking-tight text-white">OnionSite-Aegis</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse"></span>
+                            <span class="text-[10px] uppercase tracking-[0.2em] text-gray-400">v9.0 Architect</span>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="#capabilities" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">Modules</a>
+                    <a href="#topology" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">Topology</a>
+                    <a href="#forensics" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">Forensics</a>
+                    <a href="#install" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">Deploy</a>
+                    <a href="#faq" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">FAQ</a>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <a href="https://github.com/ashardian/OnionSite-Aegis" target="_blank" 
+                       class="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-green/10 border border-brand-green/20 hover:bg-brand-green/20 hover:border-brand-green/40 transition-all text-sm font-medium text-white group">
+                        <i class="fab fa-github text-lg group-hover:rotate-12 transition-transform"></i>
+                        <span>Source</span>
+                    </a>
+                    <button class="md:hidden text-2xl text-gray-300 hover:text-white p-2" onclick="toggleMenu()">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative z-10 pt-32 pb-20 lg:pt-48 lg:pb-32">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            
+            <div data-aos="fade-down" data-aos-duration="1000">
+                <span class="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-brand-green/20 bg-brand-green/5 text-brand-green text-xs font-mono font-medium mb-10">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-green"></span>
+                    </span>
+                    ARCHITECT EDITION v9.0 
+                </span>
+            </div>
+
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white mb-8 leading-tight" data-aos="fade-up" data-aos-delay="100">
+                Tor Anonymity <br>
+                <span class="text-gradient">Redefined.</span>
+            </h1>
+
+            <p class="max-w-2xl mx-auto text-lg md:text-xl text-gray-400 mb-12 leading-relaxed" data-aos="fade-up" data-aos-delay="200">
+                The industry standard for deploying hardened <strong>Tor Hidden Services</strong>. Featuring the <span class="text-white">Neural Sentry Engine</span>, Cloud-Ready SSH Valves, and optimized performance for <span class="text-white">Bare Metal & Docker</span> architectures.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20" data-aos="fade-up" data-aos-delay="300">
+                <button onclick="document.getElementById('install').scrollIntoView()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-brand-green text-brand-dark font-bold hover:bg-[#00c9ff] transition-all shadow-[0_0_20px_rgba(0,240,255,0.3)] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-terminal"></i>
+                    Initialize System
+                </button>
+                <button onclick="document.getElementById('capabilities').scrollIntoView()" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-card text-white font-medium hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-layer-group"></i>
+                    View Capabilities
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto border-t border-white/5 pt-8" data-aos="fade-up" data-aos-delay="400">
+                 <div class="p-4 rounded-lg bg-white/5">
+                     <div class="text-brand-green font-mono text-2xl font-bold">100%</div>
+                     <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Uptime</div>
+                 </div>
+                 <div class="p-4 rounded-lg bg-white/5">
+                     <div class="text-brand-purple font-mono text-2xl font-bold">DEBAIN</div>
+                     <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Debain-Optimized</div>
+                 </div>
+                 <div class="p-4 rounded-lg bg-white/5">
+                     <div class="text-brand-success font-mono text-2xl font-bold">0 LOGS</div>
+                     <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Anti-Forensic</div>
+                 </div>
+                 <div class="p-4 rounded-lg bg-white/5">
+                     <div class="text-blue-400 font-mono text-2xl font-bold">DOCKER</div>
+                     <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Containerized</div>
+                 </div>
+            </div>
+        </div>
+    </main>
+
+    <section id="capabilities" class="py-24 relative z-10 bg-black/30">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Core System Capabilities</h2>
+                <p class="text-gray-400">Architect Edition v9.0 modular components.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="glass-card p-8 rounded-2xl relative overflow-hidden group" data-aos="fade-up">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-green/10 rounded-full blur-[50px] -mr-16 -mt-16 transition-all group-hover:bg-brand-green/20"></div>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-lg bg-brand-green/10 flex items-center justify-center text-brand-green"><i class="fa-solid fa-brain text-xl"></i></div>
+                        <h3 class="text-xl font-bold text-white">Neural Sentry</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <strong>Active Defense Daemon.</strong> Continuously monitors circuit creation rates. Triggers <code>NEWNYM</code> signals to sever circuits upon detecting DDoS attacks.
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl relative overflow-hidden group" data-aos="fade-up" data-aos-delay="100">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-purple/10 rounded-full blur-[50px] -mr-16 -mt-16 transition-all group-hover:bg-brand-purple/20"></div>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-lg bg-brand-purple/10 flex items-center justify-center text-brand-purple">
+                            <i class="fa-solid fa-lock-open text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">SSH Safety Valve</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <strong>Cloud-Aware Ingress Logic.</strong> A v9.0 exclusive feature that intelligently modifies the NFTables ruleset to permit remote management (Port 22) without compromising the Tor circuit integrity. Critical for VPS deployments.
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl relative overflow-hidden group" data-aos="fade-up" data-aos-delay="200">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-purple/10 rounded-full blur-[50px] -mr-16 -mt-16 transition-all group-hover:bg-brand-purple/20"></div>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-lg bg-brand-purple/10 flex items-center justify-center text-brand-purple"><i class="fa-solid fa-fire text-xl"></i></div>
+                        <h3 class="text-xl font-bold text-white">Balanced Firewall</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <strong>State-Aware Filtering.</strong> Allows "Established" Tor connections while blocking port scans. Includes <strong>SSH Safety Valve</strong> for Cloud VPS access.
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl relative overflow-hidden group" data-aos="fade-up" data-aos-delay="300">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-danger/10 rounded-full blur-[50px] -mr-16 -mt-16 transition-all group-hover:bg-brand-danger/20"></div>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-lg bg-brand-danger/10 flex items-center justify-center text-brand-danger"><i class="fa-solid fa-eraser text-xl"></i></div>
+                        <h3 class="text-xl font-bold text-white">Amnesic Logging</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <strong>Volatile Memory Architecture.</strong> Forces all operational logs into a <code>tmpfs</code> RAM disk. A system reboot results in unrecoverable destruction of evidence.
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl relative overflow-hidden group" data-aos="fade-up" data-aos-delay="400">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[50px] -mr-16 -mt-16 transition-all group-hover:bg-blue-500/20"></div>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400"><i class="fa-brands fa-docker text-xl"></i></div>
+                        <h3 class="text-xl font-bold text-white">Containerization</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <strong>Isolated Runtime.</strong> Leverages Seccomp profiles and Capability restrictions to sandbox the application layer. Ideal for high-security deployments.
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl relative overflow-hidden group" data-aos="fade-up" data-aos-delay="500">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-success/10 rounded-full blur-[50px] -mr-16 -mt-16 transition-all group-hover:bg-brand-success/20"></div>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-lg bg-brand-success/10 flex items-center justify-center text-brand-success"><i class="fa-solid fa-user-secret text-xl"></i></div>
+                        <h3 class="text-xl font-bold text-white">Traffic Obfuscator</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <strong>Dynamic Response Manipulation.</strong> Implements random timing delays (10-50ms) and response padding to defeat side-channel correlation.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="topology" class="py-24 bg-brand-dark border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-white mb-16 text-center">System Topology</h2>
+            
+            <div class="flex flex-col md:flex-row items-center justify-center gap-8 relative z-10">
+                <div class="text-center">
+                    <div class="w-20 h-20 rounded-2xl bg-[#1A1A1D] border border-white/10 flex items-center justify-center text-3xl text-white shadow-lg mx-auto mb-4">
+                        <i class="fa-solid fa-desktop"></i>
+                    </div>
+                    <span class="text-sm font-bold text-white">PC Client</span>
+                </div>
+
+                <div class="h-0.5 w-24 bg-gradient-to-r from-gray-700 to-brand-green"></div>
+
+                <div class="text-center">
+                    <div class="px-6 py-3 rounded-full bg-brand-green/10 border border-brand-green/30 text-brand-green font-mono text-sm animate-pulse">
+                        Tor Network
+                    </div>
+                </div>
+
+                <div class="h-0.5 w-24 bg-gradient-to-r from-brand-green to-brand-purple"></div>
+
+                <div class="bg-[#0E0E11] border border-white/10 rounded-xl p-8 max-w-xl w-full relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 text-5xl text-white"><i class="fa-solid fa-server"></i></div>
+                    <div class="text-xs font-mono text-gray-500 mb-4 border-b border-white/5 pb-2">SERVER (BARE METAL / DOCKER)</div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded border border-white/5">
+                            <span class="text-sm text-gray-300"><i class="fa-solid fa-fire mr-2 text-brand-purple"></i> Ingress Firewall</span>
+                            <span class="text-xs text-brand-green">FILTERING</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded border border-white/5">
+                            <span class="text-sm text-gray-300"><i class="fa-solid fa-brain mr-2 text-brand-green"></i> Neural Sentry</span>
+                            <span class="text-xs text-brand-green">MONITORING</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-blue-500/10 rounded border border-blue-500/20">
+                            <span class="text-sm text-blue-400"><i class="fa-brands fa-docker mr-2"></i> Web Container</span>
+                            <span class="text-xs text-blue-400">ISOLATED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="forensics" class="py-24 bg-black/30">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-white mb-10 text-center">Anti-Forensic Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Response Manipulation</h3>
+                    <ul class="space-y-3 text-sm text-gray-400">
+                        <li class="flex items-start"><i class="fa-solid fa-check text-brand-green mt-1 mr-2"></i> Padding: Responses padded to random block sizes.</li>
+                        <li class="flex items-start"><i class="fa-solid fa-check text-brand-green mt-1 mr-2"></i> Timing: 10-50ms jitter added to defeat timing analysis.</li>
+                        <li class="flex items-start"><i class="fa-solid fa-check text-brand-green mt-1 mr-2"></i> Headers: Scrubbed of all identifiers (ETag, Server).</li>
+                    </ul>
+                </div>
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Amnesic Storage</h3>
+                    <ul class="space-y-3 text-sm text-gray-400">
+                        <li class="flex items-start"><i class="fa-solid fa-check text-brand-danger mt-1 mr-2"></i> Logs: Forced to /mnt/ram_logs (tmpfs).</li>
+                        <li class="flex items-start"><i class="fa-solid fa-check text-brand-danger mt-1 mr-2"></i> Reboot: Data physically destroyed on power loss.</li>
+                        <li class="flex items-start"><i class="fa-solid fa-check text-brand-danger mt-1 mr-2"></i> Swap: Disabled to prevent leakage to disk.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="install" class="py-24 bg-[#09090b]">
+        <div class="max-w-5xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-white mb-8 flex items-center gap-3">
+                <i class="fa-solid fa-terminal text-brand-green"></i> System Initialization
+            </h2>
+            
+            <div class="rounded-lg overflow-hidden border border-white/10 shadow-2xl bg-[#09090b] relative">
+                <button onclick="copyInstall(this)" class="absolute top-3 right-3 bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded text-xs transition-colors z-10 border border-white/10"><i class="fa-regular fa-copy mr-1"></i> Copy</button>
+                <div class="flex items-center px-4 py-2 bg-[#18181b] border-b border-white/10">
+                    <div class="flex space-x-2 mr-4">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 font-mono">root@aegis:~</div>
+                </div>
+                <div class="p-6 font-mono text-sm overflow-x-auto min-h-[300px] whitespace-pre-wrap break-words text-white" id="terminal-content"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <div class="p-6 rounded-xl border border-white/10 bg-white/5 hover:border-brand-green/30 transition-all">
+                    <h3 class="text-white font-bold mb-2"><i class="fa-brands fa-docker mr-2 text-blue-400"></i> Docker Container</h3>
+                    <p class="text-gray-400 text-sm mb-4">Fastest deployment with full isolation.</p>
+                    <code class="block bg-black/50 p-3 rounded text-xs text-gray-300 font-mono select-all">docker-compose build && docker-compose up -d</code>
+                </div>
+                <div class="p-6 rounded-xl border border-white/10 bg-white/5 hover:border-brand-warning/30 transition-all">
+                    <h3 class="text-white font-bold mb-2"><i class="fa-solid fa-microchip mr-2 text-brand-warning"></i> Bare Metal</h3>
+                    <p class="text-gray-400 text-sm mb-4">Optimized for Debain 11+ </p>
+                    <code class="block bg-black/50 p-3 rounded text-xs text-gray-300 font-mono select-all">chmod +x install.sh && sudo ./install.sh</code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="faq" class="py-24 bg-black/30 border-t border-white/5">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-white mb-10 text-center">Frequently Asked Questions</h2>
+            <div class="space-y-4">
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)">
+                    <div class="flex justify-between items-center"><h3 class="text-white font-bold">Does this work on Mobile (Termux/NetHunter)?</h3><i class="fa-solid fa-plus text-brand-green faq-icon"></i></div>
+                    <div class="faq-content"><p class="text-gray-400 text-sm mt-4 pt-4 leading-relaxed">Yes. The "Bare Metal" installer is optimized for Debain 11+ architectures. You can run a military-grade hidden service directly from a Debain Linux </p></div>
+                </div>
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)">
+                    <div class="flex justify-between items-center"><h3 class="text-white font-bold">Can I use this on a Cloud VPS?</h3><i class="fa-solid fa-plus text-brand-green faq-icon"></i></div>
+                    <div class="faq-content"><p class="text-gray-400 text-sm mt-4 pt-4 leading-relaxed">Yes. The v9.0 <strong>SSH Safety Valve</strong> allows you to whitelist Port 22 during installation, preventing firewall lockouts on remote servers.</p></div>
+                </div>
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)">
+                    <div class="flex justify-between items-center"><h3 class="text-white font-bold">Is it really log-free?</h3><i class="fa-solid fa-plus text-brand-green faq-icon"></i></div>
+                    <div class="faq-content"><p class="text-gray-400 text-sm mt-4 pt-4 leading-relaxed">Yes. All logs are forced into `tmpfs` (RAM). Rebooting physically destroys the data.</p></div>
+                </div>
+                <div class="faq-item glass-card rounded-xl p-6 cursor-pointer" onclick="toggleFaq(this)">
+                    <div class="flex justify-between items-center"><h3 class="text-white font-bold">What if I get a "Onion Site Not Found"?</h3><i class="fa-solid fa-plus text-brand-green faq-icon"></i></div>
+                    <div class="faq-content"><p class="text-gray-400 text-sm mt-4 pt-4 leading-relaxed">This is normal for Tor v3 addresses during the first 2-5 minutes as they propagate to the directory. v9.0 includes a Balanced Firewall to ensure this propagation is not blocked.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-12 bg-black border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-shield-halved text-brand-green text-2xl"></i>
+                <div><span class="text-white font-bold">OnionSite-Aegis</span><p class="text-xs text-gray-500">Created by <a href="https://github.com/ashardian" class="text-brand-green hover:underline">ashardian</a></p></div>
+            </div>
+            <div class="text-center md:text-right">
+                <p class="text-xs text-gray-600">Released under Custom License. Attribution Required.</p>
+                <div class="flex gap-4 justify-center md:justify-end mt-2">
+                    <a href="https://github.com/ashardian/OnionSite-Aegis" target="_blank" class="text-gray-500 hover:text-white transition-colors"><i class="fab fa-github"></i></a>
+                    <a href="https://twitter.com" target="_blank" class="text-gray-500 hover:text-white transition-colors"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        AOS.init({ once: true, offset: 50, duration: 800 });
+
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('translate-x-full');
+            if (!menu.classList.contains('translate-x-full')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        function toggleFaq(element) { 
+            element.classList.toggle('active');
+        }
+
+        function copyInstall(button) {
+            const text = 'git clone https://github.com/ashardian/OnionSite-Aegis.git && cd OnionSite-Aegis && chmod +x ./install.sh && sudo ./install.sh';
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
+                    button.classList.add('bg-green-900/50');
+                    button.classList.remove('bg-white/10', 'hover:bg-white/20');
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                        button.classList.remove('bg-green-900/50');
+                        button.classList.add('bg-white/10', 'hover:bg-white/20');
+                    }, 2000);
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('Command copied to clipboard!');
+        }
+
+        const commands = [
+            { text: "root@aegis:~# git clone https://github.com/ashardian/OnionSite-Aegis.git", delay: 50 },
+            { text: "\nCloning into 'OnionSite-Aegis'...", delay: 20 },
+            { text: "\nroot@aegis:~# cd OnionSite-Aegis", delay: 50 },
+            { text: "\nroot@aegis:~/OnionSite-Aegis# chmod +x ./install.sh", delay: 50 },
+            { text: "\nroot@aegis:~/OnionSite-Aegis# ./install.sh", delay: 50 },
+            { text: "\n\n=== ONIONSITE-AEGIS ARCHITECT v9.0 ===", delay: 20, color: '#00F0FF' },
+            { text: "\n[SYS] Sanitizing Environment... OK", delay: 20, color: '#00F0FF' },
+            { text: "\n[SYS] Detecting Architecture... Debain (Debain Optimization Active)", delay: 20, color: '#FFB800' },
+            { text: "\n[SEC] Initializing Balanced Firewall... OK", delay: 20, color: '#00F0FF' },
+            { text: "\n[DEF] Loading Neural Sentry Engine... ACTIVE", delay: 20, color: '#00DC82' },
+            { text: "\n\n>>> SYSTEM ONLINE: 7g4...xyz.onion <<<", delay: 20, color: '#00DC82' }
+        ];
+
+        const terminal = document.getElementById('terminal-content');
+        async function typeWriter() {
+            for (let cmd of commands) {
+                const span = document.createElement('span');
+                if (cmd.color) span.style.color = cmd.color;
+                terminal.appendChild(span);
+                for (let char of cmd.text) {
+                    span.textContent += char;
+                    await new Promise(r => setTimeout(r, Math.random() * 20 + 20));
+                    terminal.parentElement.scrollTop = terminal.parentElement.scrollHeight;
+                }
+                await new Promise(r => setTimeout(r, cmd.delay * 5));
+            }
+            const cursor = document.createElement('span'); cursor.className = 'cursor-blink'; cursor.textContent = '▋'; terminal.appendChild(cursor);
+        }
+        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { typeWriter(); observer.disconnect(); } }); });
+        observer.observe(terminal);
+    </script>
+</body>
+</html>
