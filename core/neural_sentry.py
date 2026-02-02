@@ -15,12 +15,13 @@ import logging
 import signal
 import json
 import re
-from stem.control import Controller, Signal
+from stem.control import Controller, Signal, EventType
 from stem import CircStatus
 from collections import deque
 import threading
 from pathlib import Path
 from stem.control import EventType
+
 
 # Try to use inotify for real-time file monitoring (fallback to polling)
 try:
