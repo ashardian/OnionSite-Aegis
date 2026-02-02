@@ -186,7 +186,6 @@ HiddenServiceVersion 3
 HiddenServicePort 80 127.0.0.1:80
 Sandbox 0
 NoExec 1
-HardwareAccel 1
 SafeLogging 1
 AvoidDiskWrites 1
 Log notice file $TOR_LOG_DIR/notices.log
@@ -291,50 +290,40 @@ EOF
     systemctl enable neural-sentry
 fi
 
-log "Applying Balanced NFTables Rules..."
-cat > /etc/nftables.conf <<EOF
-#!/usr/sbin/nft -f
-# Balanced NFTables Firewall (v9.1)
-# Allows Tor functionality while blocking unsolicited external input.
+log "Applying NFTables Firewall..."
 
+# PATCH: Use the external configuration file if it exists (Single Source of Truth)
+# Checks in ./conf/nftables.conf relative to the install script
+if [ -f "$INSTALL_DIR/conf/nftables.conf" ]; then
+    log "Loading firewall rules from conf/nftables.conf..."
+    cp "$INSTALL_DIR/conf/nftables.conf" /etc/nftables.conf
+    chmod 600 /etc/nftables.conf
+else
+    warn "conf/nftables.conf not found! Falling back to default inline rules."
+    # Fallback: Generate basic rules if the file is missing
+    cat > /etc/nftables.conf <<EOF
+#!/usr/sbin/nft -f
 flush ruleset
 table inet filter {
     chain input {
         type filter hook input priority 0; policy drop;
-
-        # 1. Allow Loopback (Vital for Tor <-> Nginx)
         iifname "lo" accept
-
-        # 2. Allow Established Connections (Replies from the internet)
-        # This is critical for Tor to download directory info.
         ct state established,related accept
-
-        # 3. Drop Invalid Packets
         ct state invalid drop
-
-        # 4. ICMP (Ping) - Light rate limit
         ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable, time-exceeded } limit rate 5/second accept
-
-        # 5. SSH Safety Valve (Will be uncommented if enabled)
-        # tcp dport 22 accept
-
-        # 6. Log and Drop everything else
         log prefix "FIREWALL-DROP: " drop
     }
     chain forward { type filter hook forward priority 0; policy drop; }
     chain output { type filter hook output priority 0; policy accept; }
 }
 EOF
-
-# SSH Safety Logic (Simplified for the new rules)
-if [ $ENABLE_SSH -eq 1 ]; then
-    sed -i 's/# tcp dport 22/tcp dport 22/g' /etc/nftables.conf
-    log "SSH Access Enabled in Firewall."
 fi
 
-if nft -c -f /etc/nftables.conf 2>/dev/null; then
-    nft -f /etc/nftables.conf
-    systemctl enable nftables 2>/dev/null || true
+# SSH Safety Logic
+if [ $ENABLE_SSH -eq 1 ]; then
+    # Uncomments the SSH line in the config file
+    sed -i 's/# tcp dport 22/tcp dport 22/g' /etc/nftables.conf
+    log "SSH Access Enabled in Firewall."
 fi
 
 # ==============================================================================
