@@ -96,16 +96,11 @@ HiddenServicePort 80 127.0.0.1:8080
 # Privacy & Security Hardening
 Sandbox 1
 NoExec 1
-HardwareAccel 1
 SafeLogging 1
 AvoidDiskWrites 1
 NumCPUs $CORES
 
 # Enhanced Privacy Settings
-DisableDebuggerAttachment 1
-SafeSocks 1
-WarnUnsafeSocks 0
-TestSocks 1
 CircuitBuildTimeout 10
 KeepalivePeriod 60
 NewCircuitPeriod 30
@@ -116,7 +111,6 @@ MaxClientCircuitsPending 32
 ConnectionPadding 1
 ReducedConnectionPadding 0
 CircuitPadding 1
-PaddingDistribution piatkowski  # Advanced padding distribution
 
 # Guard Node Privacy (Enhanced)
 UseEntryGuards 1
