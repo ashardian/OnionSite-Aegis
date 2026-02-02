@@ -20,6 +20,7 @@ from stem import CircStatus
 from collections import deque
 import threading
 from pathlib import Path
+from stem.control import EventType
 
 # Try to use inotify for real-time file monitoring (fallback to polling)
 try:
@@ -130,7 +131,7 @@ class CircuitBreaker:
                         self.analyze_rate()
 
             try:
-                self.controller.add_event_listener(handle_event, 'CIRC')
+                self.controller.add_event_listener(handle_event, EventType.CIRC)
                 logging.info("Circuit monitoring active")
                 
                 # Keep connection alive and handle events
@@ -312,11 +313,16 @@ class PrivacyMonitor:
             self.check_tor_status()
 
 def signal_handler(signum, frame):
-    """Handle shutdown signals gracefully"""
     logging.info(f"Received signal {signum}, shutting down gracefully...")
-    breaker.running = False
-    fim.running = False
-    privacy_mon.running = False
+    
+    # SAFELY check if objects exist before stopping them
+    if globals().get('breaker'):
+        breaker.running = False
+    if globals().get('fim'):
+        fim.running = False
+    if globals().get('privacy_mon'):
+        privacy_mon.running = False
+        
     sys.exit(0)
 
 if __name__ == "__main__":
