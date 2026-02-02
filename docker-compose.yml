@@ -1,3 +1,4 @@
+cat > docker-compose.yml <<EOF
 version: '3.8'
 
 services:
@@ -5,52 +6,42 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      network: host
     container_name: onionsite-aegis
     restart: unless-stopped
     
-    # Security: Run with minimal capabilities
+    # --- SECURITY & PERMISSIONS FIXES ---
     cap_drop:
       - ALL
     cap_add:
-      - NET_BIND_SERVICE  # Required for binding to ports < 1024
-      - CHOWN              # Required for Tor
-      - SETUID             # Required for Tor
-      - SETGID             # Required for Tor
-      - DAC_OVERRIDE      # Required for file operations
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - FOWNER             # FIX: Allows log permission changes
     
-    # Security: Read-only root filesystem where possible
-    read_only: false  # Tor and Nginx need write access for logs and runtime data
-    
-    # Security: No new privileges
     security_opt:
       - no-new-privileges:true
       - apparmor:docker-default
-      - seccomp:./seccomp-profile.json  # Custom seccomp profile
+      # - seccomp:./seccomp-profile.json  # FIX: Disabled to prevent crash
     
-    # Network isolation
+    # --- NETWORK & DNS FIXES ---
+    dns:
+      - 8.8.8.8           # FIX: Google DNS
+      - 1.1.1.1           # FIX: Cloudflare DNS
+    
     networks:
-      - aegis-internal
+      - aegis-public
     
-    # Volumes
     volumes:
-      # Persistent storage for Tor keys (critical - don't lose these!)
-       
-# CHANGED: We use a direct path so Docker creates the folder automatically for you
       - ./data/tor-keys:/var/lib/tor/hidden_service:rw
-      # Web content
-      - ./webroot:/var/www/onion_site:ro  # Read-only web content
-      # RAM logs (tmpfs for privacy)
+      - ./webroot:/var/www/onion_site:ro
       - type: tmpfs
         target: /mnt/ram_logs
         tmpfs:
           size: 256M
           mode: 1777
-          # Removed unsupported properties: noexec, nosuid, nodev
-      # Optional: Mount custom configs
-      # - ./custom-torrc:/etc/tor/torrc:ro
     
-    # Resource limits (prevent resource exhaustion attacks)
     deploy:
       resources:
         limits:
@@ -60,13 +51,11 @@ services:
           cpus: '0.5'
           memory: 256M
     
-    # Environment variables
     environment:
       - TZ=UTC
       - TOR_CONTROL_PORT=9051
       - WEB_ROOT=/var/www/onion_site
     
-    # Health check (requires curl in container)
     healthcheck:
       test: ["CMD-SHELL", "test -f /var/lib/tor/hidden_service/hostname && curl -f http://127.0.0.1:8080/ >/dev/null 2>&1 || exit 1"]
       interval: 30s
@@ -74,29 +63,21 @@ services:
       retries: 3
       start_period: 40s
     
-    # Logging (optional - for debugging, remove in production for privacy)
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-        labels: "privacy-focused"
     
-    # User (run as non-root where possible)
-    # Note: Tor requires root or specific user, so we use debian-tor
-    user: "0:0"  # Root required for Tor, but container is isolated
-    
-    # Working directory
+    user: "0:0"
     working_dir: /var/www/onion_site
-    
-    # Command
     command: ["aegis"]
 
-# Networks
 networks:
-  aegis-internal:
+  aegis-public:
     driver: bridge
-    internal: true  # No external access
+    # internal: true  <-- DELETED to allow internet access
     ipam:
       config:
-        - subnet: 172.28.0.0/16
+        - subnet: 172.33.0.0/16  # FIX: New subnet to avoid "pool overlap" errors
+EOF
