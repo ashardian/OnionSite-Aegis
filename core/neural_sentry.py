@@ -15,13 +15,11 @@ import logging
 import signal
 import json
 import re
-from stem.control import Controller, Signal, EventType
+from stem.control import Controller, Signal, EventType  # FIX: Added EventType
 from stem import CircStatus
 from collections import deque
 import threading
 from pathlib import Path
-from stem.control import EventType
-
 
 # Try to use inotify for real-time file monitoring (fallback to polling)
 try:
@@ -132,6 +130,7 @@ class CircuitBreaker:
                         self.analyze_rate()
 
             try:
+                # FIX: Use EventType.CIRC instead of string 'CIRC'
                 self.controller.add_event_listener(handle_event, EventType.CIRC)
                 logging.info("Circuit monitoring active")
                 
@@ -314,9 +313,10 @@ class PrivacyMonitor:
             self.check_tor_status()
 
 def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
     logging.info(f"Received signal {signum}, shutting down gracefully...")
     
-    # SAFELY check if objects exist before stopping them
+    # FIX: Safely check if objects exist before stopping them
     if globals().get('breaker'):
         breaker.running = False
     if globals().get('fim'):
