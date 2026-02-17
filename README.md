@@ -296,13 +296,7 @@ This is a privacy-focused project. Contributions that enhance privacy and securi
 
 ## 📄 License
 
-**Custom License - See [LICENSE](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/LICENSE) file for full terms.**
-
-**Quick Summary:**
-
-* ✅ You may use and redistribute (unmodified)
-* ❌ You may NOT modify or create derivatives
-* 📢 You MUST give attribution/shoutout to the author
+**MIT License - See [LICENSE](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/LICENSE) file for full terms.**
 
 **Attribution Requirements:**
 When using, redistributing, or showcasing OnionSite-Aegis, you must include copyright notices and give credit to the author. See [Attribution Guidelines](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/ATTRIBUTION.md).
