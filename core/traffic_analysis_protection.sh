@@ -2,7 +2,7 @@
 # Traffic Analysis Protection Module
 # Prevents correlation attacks through various techniques
 
-LOG_FILE="/mnt/ram_logs/traffic_protection.log"
+LOG_FILE="/var/log/tor/traffic_protection.log"
 
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
@@ -96,6 +96,7 @@ verify_tor_only() {
 
 # Main execution
 main() {
+    mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
     log_message "=== Traffic Analysis Protection Module Starting ==="
     
     block_dns_leaks
@@ -115,4 +116,3 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     fi
     main
 fi
-

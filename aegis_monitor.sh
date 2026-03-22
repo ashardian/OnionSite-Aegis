@@ -35,6 +35,9 @@ if [ -f "$SENTRY_LOG" ]; then
 else
     START_LINE=0
 fi
+TOTAL_ATTACKS=0
+TOTAL_WARNINGS=0
+LAST_ATTACK_EPOCH=0
 
 # --- HELPER FUNCTIONS ---
 
@@ -48,7 +51,21 @@ get_cpu_mem() {
 }
 
 get_status_icon() {
-    if systemctl is-active --quiet "$1"; then echo -e "${GREEN}● ONLINE ${NC}"; else echo -e "${RED}✖ OFFLINE${NC}"; fi
+    SERVICE_NAME="$1"
+    PROCESS_PATTERN="$2"
+
+    if command -v systemctl >/dev/null 2>&1; then
+        if [ -n "$SERVICE_NAME" ] && systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+            echo -e "${GREEN}● ONLINE ${NC}"
+            return
+        fi
+    fi
+
+    if [ -n "$PROCESS_PATTERN" ] && pgrep -f "$PROCESS_PATTERN" >/dev/null 2>&1; then
+        echo -e "${GREEN}● ONLINE ${NC}"
+    else
+        echo -e "${RED}✖ OFFLINE${NC}"
+    fi
 }
 
 get_process_icon() {
@@ -88,15 +105,20 @@ while true; do
         # Ensure we don't crash if log rotated (became smaller)
         if [ "$CURRENT_LINE" -lt "$START_LINE" ]; then START_LINE=0; fi
         
-        # Extract ONLY the new lines for this session
-        NEW_LOGS=$(tail -n +$((START_LINE + 1)) "$SENTRY_LOG" 2>/dev/null)
-        
-        # Count stats only from this session's logs
-        ATTACKS=$(echo "$NEW_LOGS" | grep -c "ATTACK")
-        WARNINGS=$(echo "$NEW_LOGS" | grep -c "WARNING")
+        # Extract only newly appended lines since previous refresh
+        DELTA_LOGS=$(tail -n +$((START_LINE + 1)) "$SENTRY_LOG" 2>/dev/null)
+        START_LINE="$CURRENT_LINE"
+
+        DELTA_ATTACKS=$(echo "$DELTA_LOGS" | grep -E -c "ATTACK DETECTED|BURST ATTACK DETECTED|DEFENSE TRIGGERED")
+        DELTA_WARNINGS=$(echo "$DELTA_LOGS" | grep -E -c "WARNING|CRITICAL")
+
+        TOTAL_ATTACKS=$((TOTAL_ATTACKS + DELTA_ATTACKS))
+        TOTAL_WARNINGS=$((TOTAL_WARNINGS + DELTA_WARNINGS))
+        if [ "$DELTA_ATTACKS" -gt 0 ]; then LAST_ATTACK_EPOCH=$(date +%s); fi
     else
-        ATTACKS=0
-        WARNINGS=0
+        DELTA_LOGS=""
+        DELTA_ATTACKS=0
+        DELTA_WARNINGS=0
     fi
     
     # 2. RENDER HEADER
@@ -112,15 +134,16 @@ while true; do
     # 4. INFRASTRUCTURE
     echo -e "${YELLOW}[ INFRASTRUCTURE STATUS ]${NC}\033[K"
     printf "${GREY}%-15s %-12s %-15s %-15s${NC}\033[K\n" "SERVICE" "STATUS" "CPU/MEM" "PORT"
-    printf "%-15s %-20s %-15s %-15s\033[K\n" "Tor Daemon" "$(get_status_icon tor@default)" "$(get_cpu_mem /usr/bin/tor)" "9050/9051"
-    printf "%-15s %-20s %-15s %-15s\033[K\n" "Nginx Web" "$(get_status_icon nginx)" "$(get_cpu_mem nginx)" "80 (Local)"
+    printf "%-15s %-20s %-15s %-15s\033[K\n" "Tor Daemon" "$(get_status_icon tor@default "/usr/bin/tor")" "$(get_cpu_mem /usr/bin/tor)" "9050/9051"
+    printf "%-15s %-20s %-15s %-15s\033[K\n" "Nginx Web" "$(get_status_icon nginx "nginx")" "$(get_cpu_mem nginx)" "80 (Local)"
     printf "%-15s %-20s %-15s %-15s\033[K\n" "Neural Sentry" "$(get_process_icon neural_sentry.py)" "$(get_cpu_mem neural_sentry.py)" "Internal"
     echo -e "\033[K"
 
     # 5. LIVE DEFENSE STATS
     echo -e "${YELLOW}[ LIVE DEFENSE STATS ]${NC}\033[K"
     
-    if [ "$ATTACKS" -gt 0 ]; then
+    NOW_EPOCH=$(date +%s)
+    if [ "$LAST_ATTACK_EPOCH" -gt 0 ] && [ $((NOW_EPOCH - LAST_ATTACK_EPOCH)) -lt 120 ]; then
         STATUS_MSG="UNDER ATTACK"
         STATUS_COLOR=$RED
     else
@@ -128,10 +151,10 @@ while true; do
         STATUS_COLOR=$GREEN
     fi
     
-    printf "Session Status: ${STATUS_COLOR}%-18s${NC} [ New Attacks: ${RED}%s${NC} | New Warnings: ${YELLOW}%s${NC} ]\033[K\n" "$STATUS_MSG" "$ATTACKS" "$WARNINGS"
+    printf "Session Status: ${STATUS_COLOR}%-18s${NC} [ New: ${RED}%sA${NC}/ ${YELLOW}%sW${NC} | Total: ${RED}%sA${NC}/ ${YELLOW}%sW${NC} ]\033[K\n" "$STATUS_MSG" "$DELTA_ATTACKS" "$DELTA_WARNINGS" "$TOTAL_ATTACKS" "$TOTAL_WARNINGS"
     
     # RAM Check
-    if mount | grep -q "/var/log/tor type tmpfs"; then
+    if mountpoint -q /var/log/tor || mount | grep -q "/mnt/ram_logs type tmpfs"; then
         RAM_USAGE=$(df -h /var/log/tor | awk 'NR==2 {print $5}' | tr -d '%')
         echo -n "Amnesic Logs:   "
         draw_bar "$RAM_USAGE"
@@ -154,8 +177,8 @@ while true; do
     echo -e "${GREY}--- REAL-TIME SECURITY FEED (Session Only) ---${NC}\033[K"
     
     # Logic: Show the last 3 *relevant* lines from the NEW logs
-    if [ -n "$NEW_LOGS" ]; then
-        EVENTS=$(echo "$NEW_LOGS" | grep -E "CRITICAL|WARNING|ATTACK" | tail -n 3)
+    if [ -n "$DELTA_LOGS" ]; then
+        EVENTS=$(echo "$DELTA_LOGS" | grep -E "CRITICAL|WARNING|ATTACK" | tail -n 3)
         
         if [ -n "$EVENTS" ]; then
              echo "$EVENTS" | while read line; do

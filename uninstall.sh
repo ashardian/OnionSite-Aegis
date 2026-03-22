@@ -5,14 +5,15 @@ if [ "$EUID" -ne 0 ]; then echo "Run as root"; exit 1; fi
 echo "Uninstalling Aegis..."
 
 # Stop services (ignore errors if services don't exist)
-systemctl stop tor nginx neural-sentry aegis-ram-init privacy-monitor.timer 2>/dev/null || true
-systemctl disable neural-sentry aegis-ram-init privacy-monitor.timer 2>/dev/null || true
+systemctl stop tor nginx neural-sentry aegis-ram-init privacy-monitor.timer traffic-protection.service 2>/dev/null || true
+systemctl disable neural-sentry aegis-ram-init privacy-monitor.timer traffic-protection.service 2>/dev/null || true
 
 # Remove systemd units
 rm -f /etc/systemd/system/neural-sentry.service
 rm -f /etc/systemd/system/aegis-ram-init.service
 rm -f /etc/systemd/system/privacy-monitor.service
 rm -f /etc/systemd/system/privacy-monitor.timer
+rm -f /etc/systemd/system/traffic-protection.service
 systemctl daemon-reload
 
 # Revert Logging
