@@ -70,7 +70,7 @@ sudo cat /var/lib/tor/hidden_service/hostname
 
 ## ⚠️ System Requirements
 
-- **OS:** Debian 11+ (Bookworm/Trixie), Kali Linux, or Parrot OS
+- **OS:** Debian 13 Trixie, or Parrot OS
 - **Access:** Root required
 - **Disk:** 500MB minimum free space
 - **Note:** Designed for dedicated servers or fresh VMs only
