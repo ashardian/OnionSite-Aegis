@@ -6,7 +6,7 @@ Get your hardened Tor hidden service running in minutes.
 
 ## Prerequisites
 
-- Debian 11+, Kali Linux, or Parrot OS
+- Debian 11+, or Parrot OS
 - Root access
 - 500MB+ free disk space
 
