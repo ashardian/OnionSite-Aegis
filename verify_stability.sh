@@ -19,12 +19,12 @@ log_ok() {
 
 log_error() {
     echo -e "${RED}✗${NC} $1"
-    ((ERRORS++))
+    ((++ERRORS))
 }
 
 log_warning() {
     echo -e "${YELLOW}⚠${NC} $1"
-    ((WARNINGS++))
+    ((++WARNINGS))
 }
 
 log_info() {
@@ -226,7 +226,7 @@ done
 # 9. Check Documentation
 log_info "Checking Documentation..."
 
-DOC_FILES=("README.md" "DOCKER_DEPLOYMENT.md" "QUICKSTART.md" "ANTI_TRACKING_GUIDE.md")
+DOC_FILES=("README.md" "docs/DOCKER_DEPLOYMENT.md" "docs/QUICKSTART.md" "docs/ANTI_TRACKING_GUIDE.md")
 for doc in "${DOC_FILES[@]}"; do
     if [ -f "$doc" ]; then
         log_ok "$doc exists"
@@ -262,4 +262,3 @@ else
     echo -e "${RED}✗ $ERRORS error(s) and $WARNINGS warning(s) found${NC}"
     exit 1
 fi
-

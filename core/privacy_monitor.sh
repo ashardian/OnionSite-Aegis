@@ -2,7 +2,7 @@
 # Privacy Monitor - Checks for privacy leaks and misconfigurations
 # Run periodically via cron or systemd timer
 
-LOG_FILE="/mnt/ram_logs/privacy_monitor.log"
+LOG_FILE="/var/log/tor/privacy_monitor.log"
 ALERT_THRESHOLD=5
 
 log_message() {
@@ -10,7 +10,7 @@ log_message() {
 }
 
 check_tor_safelogging() {
-    if systemctl is-active --quiet tor; then
+    if systemctl is-active --quiet tor || systemctl is-active --quiet tor@default; then
         SAFELOG=$(tor --verify-config -f /etc/tor/torrc 2>&1 | grep -i "SafeLogging")
         if ! echo "$SAFELOG" | grep -q "1"; then
             log_message "ALERT: SafeLogging may not be enabled in Tor"
@@ -34,7 +34,7 @@ check_nginx_headers() {
 }
 
 check_ram_logs() {
-    if mountpoint -q /mnt/ram_logs; then
+    if mountpoint -q /var/log/tor; then
         log_message "OK: RAM logs mounted correctly"
         return 0
     else
@@ -66,13 +66,14 @@ check_firewall() {
 
 check_disk_usage() {
     # Check if logs are accumulating on disk (should be minimal)
-    DISK_LOGS=$(du -sh /var/log/nginx /var/log/tor 2>/dev/null | awk '{sum+=$1} END {print sum}')
-    if [ -n "$DISK_LOGS" ] && [ "$DISK_LOGS" != "0" ]; then
+    DISK_LOGS_BYTES=$(du -sb /var/log/nginx /var/log/tor 2>/dev/null | awk '{sum+=$1} END {print sum+0}')
+    if [ "$DISK_LOGS_BYTES" -gt 0 ]; then
         log_message "WARNING: Logs found on disk (should be in RAM only)"
     fi
 }
 
 # Main execution
+mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
 log_message "=== Privacy Monitor Check Started ==="
 
 ALERTS=0
@@ -91,4 +92,3 @@ if [ $ALERTS -ge $ALERT_THRESHOLD ]; then
 fi
 
 exit 0
-

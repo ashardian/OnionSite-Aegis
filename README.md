@@ -1,306 +1,211 @@
-![alt text](https://github.com/ashardian/OnionSite-Aegis/blob/1128aa00d9f5cfb59266958a8838d76adf382855/Onionsite-Aegis.jpeg)
+![OnionSite-Aegis](https://github.com/ashardian/OnionSite-Aegis/blob/1128aa00d9f5cfb59266958a8838d76adf382855/Onionsite-Aegis.jpeg)
 
+# 🛡️ OnionSite-Aegis (v10.0 Bare Metal Edition)
 
-# 🛡️ OnionSite-Aegis (v9.0 Architect Edition)
-
-> **Military-Grade Tor Hidden Service Orchestrator with Enhanced Privacy & Anti-Tracking**
+> **Military-Grade Tor Hidden Service Orchestrator**
 > *Automated. Hardened. Anti-Forensic. Privacy-First.*
 
 **The most privacy-focused and secure Tor hidden service deployment tool available.**
 
 ---
 
-## ⚠️ Architect Edition Notice (v9.0)
+## ⚠️ v10.0 Notice — Docker Support Removed
 
-This release introduces the **Architect Installer v9.0**, a modular deployment engine that solves critical dependency issues and adds interactive configuration.
+Starting with v10.0, **Docker support has been permanently removed.**
 
-* **Interactive Feature Selector:** Choose exactly which modules (WAF, Lua, Neural Sentry) to enable.
-* **SSH Safety Valve:** New logic allows secure remote management (SSH) for Cloud VPS deployments without compromising firewall integrity.
-* **Balanced Firewall:** Optimized NFTables ruleset that provides military-grade input blocking while ensuring reliable Tor circuit establishment.
-* **Nuclear Sanitization:** Automatically purges "ghost configurations" and conflicting binaries before deployment.
-* **Anti-Forensics:** All logs are written to `tmpfs` (RAM) and vanish upon reboot.
-* **Session-Based Monitoring:** New HUD tracks active threats in real-time, ignoring historical log noise.
+Docker was found to be fundamentally incompatible with Aegis's core security features:
+
+- **sysctl kernel hardening** cannot be applied inside a container without `--privileged`, which defeats isolation entirely.
+- **NFTables firewall** conflicts with Docker's own iptables/nftables management on the host.
+- **Tor Sandbox mode** (`Sandbox 1`) crashes inside Docker due to seccomp profile conflicts.
+- **tmpfs RAM logging** behaves differently in containers, causing permission failures.
+
+Bare metal deployment gives you **full, direct control** over every layer of the stack — which is exactly what a privacy-hardened hidden service requires.
 
 ---
 
 ## 🎯 Key Features
 
-* 🔒 **Impossible to Track** - Comprehensive anti-tracking measures make correlation attacks impossible
-* 🐳 **Docker Support** - Containerized deployment for maximum isolation
-* 🛡️ **Enhanced Firewall** - "Balanced" NFTables ruleset prevents leaks while maintaining connectivity
-* 🧠 **Neural Sentry** - Real-time attack detection and automatic defense
-* 💾 **Amnesic Logging** - RAM-only logs that vanish on reboot
-* 🚫 **Zero Fingerprinting** - Complete header removal and response padding
-* ⚡ **Traffic Analysis Resistant** - Response size padding and timing randomization
-* 🖥️ **Live System HUD** - Professional-grade terminal dashboard for real-time monitoring
+- 🔒 **Impossible to Track** — Comprehensive anti-tracking measures make correlation attacks extremely difficult
+- 🛡️ **Hardened Firewall** — Balanced NFTables ruleset blocks attacks while maintaining Tor connectivity
+- 🧠 **Neural Sentry** — Real-time attack detection and automatic circuit-killing defense
+- 💾 **Amnesic Logging** — RAM-only logs that vanish on reboot (anti-forensics)
+- 🚫 **Zero Fingerprinting** — Complete header removal and response padding
+- ⚡ **Traffic Analysis Resistant** — Response size padding and timing randomization
+- 🖥️ **Live System HUD** — Real-time terminal dashboard for monitoring threats
+- 🔥 **WAF Protection** — OWASP ModSecurity Core Rule Set blocks SQLi, XSS, and more
+- 🔑 **Kernel Hardening** — Extended sysctl settings for network privacy and exploit prevention
+
+---
 
 ## 📖 Setup Guide
 
-👉 For detailed setup instructions, see [SETUP.md](SETUP.md)
+👉 For full installation instructions, see [SETUP.md](SETUP.md)
 
-The setup guide includes:
+---
 
-* Step-by-step installation for both Docker and bare metal
-* Troubleshooting guide
-* Maintenance procedures
-* Security best practices
-
-## 🐳 Docker Deployment (Recommended)
-
-For enhanced security and isolation, **Docker deployment is recommended**. See [SETUP.md](SETUP.md) for complete guide.
-
-**Quick Start:**
+## 🚀 Quick Start
 
 ```bash
-mkdir -p data/tor-keys webroot
-echo "<h1>My Site</h1>" > webroot/index.html
-docker-compose build
-docker-compose up -d
-docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
-
+git clone https://github.com/ashardian/OnionSite-Aegis.git
+cd OnionSite-Aegis
+chmod +x install.sh
+sudo ./install.sh
 ```
 
-**Benefits:**
+The **v10.0 Architect Installer** will prompt you to configure:
 
-* ✅ Container isolation from host system
-* ✅ Enhanced security (seccomp, capabilities, AppArmor)
-* ✅ Resource limits prevent DoS
-* ✅ Easy deployment and updates
-* ✅ Network isolation
-* ✅ Verified and stable
+- **WAF & IPS** — Enable for high security, disable for low RAM usage
+- **Lua Padding** — Enable for anti-fingerprinting
+- **SSH Access** — CRITICAL: Enable this if using a Cloud VPS (AWS/DigitalOcean) to prevent lockout
+- **Wipe Identity** — Choose to keep existing Tor keys or generate a new address
 
-## ⚠️ WARNING: HIGH SECURITY & PRIVACY MODE
+After installation, get your onion address:
 
-This tool applies **aggressive system hardening and privacy protection**. It is designed for dedicated servers or fresh VMs (Debian 11+/Parrot OS).
+```bash
+sudo cat /var/lib/tor/hidden_service/hostname
+```
 
-* It **disables IPv6** system-wide.
-* It **locks kernel pointers** (restricts `dmesg`).
-* It moves all logs to **RAM (tmpfs)**. If power is cut, logs vanish forever.
-* It implements **Active Circuit Killing** via the Tor Control Port.
-* **Privacy-First:** Enhanced anti-fingerprinting, log sanitization, and traffic analysis protection.
+---
+
+## ⚠️ System Requirements
+
+- **OS:** Debian 11+ (Bookworm/Trixie), Kali Linux, or Parrot OS
+- **Access:** Root required
+- **Disk:** 500MB minimum free space
+- **Note:** Designed for dedicated servers or fresh VMs only
 
 ---
 
 ## 🚀 Features Detail
 
-### 1. Amnesic Logging (Forensic Counter-Measure)
+### 1. Amnesic Logging (Anti-Forensics)
 
-Standard tools log to the hard drive. Aegis creates a 256MB RAM-disk at `/mnt/ram_logs` (or `/var/log/tor` in v7.0).
+All logs are written to a RAM-disk (`tmpfs`) at `/var/log/tor`. Nginx and Tor logs are symlinked here. Rebooting or pulling the plug makes traffic logs physically unrecoverable. A **Privacy Log Sanitizer** also strips IPs, hostnames, and sensitive data from logs in real time.
 
-* Nginx and Tor logs are symlinked here.
-* **Benefit:** Rebooting or pulling the plug makes traffic logs physically unrecoverable.
-* **Privacy Log Sanitizer:** Automatically removes IPs, hostnames, and sensitive data from logs.
+### 2. Neural Sentry v5.0 (Active Defense)
 
-### 2. Neural Sentry v5.0 (Enhanced Active Defense)
+A Python daemon (`neural_sentry.py`) acting as a localized IDS:
 
-A Python-based daemon (`neural_sentry.py`) that acts as a localized IDS with privacy monitoring.
+- **Circuit Breaker** — Monitors circuit creation rates. On DDoS or deanonymization attack detection, signals `NEWNYM` to Tor, killing all circuits instantly.
+- **File Integrity** — Uses inotify for instant detection of unauthorized file changes.
+- **Privacy Monitor** — Continuously verifies Tor privacy settings (SafeLogging, etc.).
 
-* **Circuit Breaker:** Monitors circuit creation rates. If a DDoS or Deanonymization attack is detected, it signals `NEWNYM` to Tor, instantly killing all circuits.
-* **Real-Time File Integrity:** Uses inotify (Linux) for instant file change detection.
-* **Privacy Monitoring:** Continuously verifies Tor privacy settings (SafeLogging, etc.).
+### 3. Hardened NFTables Firewall
 
-### 3. Enhanced Privacy & Security Hardening
+- DDoS protection (SYN flood, connection rate limiting)
+- Per-IP connection limits
+- Blocks all unsolicited input (port scanning protection)
+- Optional SSH safety valve for VPS deployments
 
-* **Enhanced NFTables Firewall:**
-* DDoS protection (SYN flood, connection rate limiting)
-* Per-IP connection limits (max 5 connections/minute)
-* Host-level firewall script for Docker deployments Blocks unsolicited input (Port Scanning Protection)
-* Optional SSH Access control (Safe for VPS)
+### 4. Anti-Tracking & Traffic Analysis Protection
 
-* **Tor Sandbox:** Runs Tor with `Sandbox 1`, preventing the process from making unauthorized syscalls.
-* **Nginx Privacy Headers:** Anti-fingerprinting headers, rate limiting, and request sanitization.
-* **Kernel Hardening:** Extended sysctl settings for network privacy and exploit prevention.
+- **Response Size Padding** — All responses padded to uniform sizes (defeats size correlation)
+- **Timing Randomization** — Random delays prevent timing correlation attacks
+- **DNS Leak Prevention** — All DNS queries blocked except through Tor
+- **Header Removal** — ETag, Last-Modified, and all identifying headers stripped
 
-### 4. Privacy Monitor 
-
-Automated privacy compliance checker that runs periodically:
-
-* Verifies Tor SafeLogging is enabled
-* Checks Nginx privacy headers
-* Validates RAM log mounting
-* Alerts on privacy misconfigurations
-
-**A new, professional-grade terminal dashboard (aegis_monitor.sh) that provides:**
-
-* Session-Based Tracking: Ignores old logs, showing only current session threats.
-* Live Resource Tracking: CPU/RAM usage for Tor and Nginx.
-* RAM Security Check: Visually confirms if logs are safe in RAM or leaking to disk.
-* Real-Time Feed: A clean stream of security events (Attacks/Warnings) without debug noise.
 ### 5. Web Application Firewall (WAF)
 
-* OWASP ModSecurity Core Rule Set (CRS)
-* Blocks SQL injection, XSS, and shell uploads
-* Application-layer protection
+- OWASP ModSecurity Core Rule Set (CRS)
+- Blocks SQL injection, XSS, and shell uploads
+- Application-layer protection via Nginx
 
-### 6. Anti-Tracking & Traffic Analysis Protection 🔒
+### 6. Kernel Hardening
 
-**Makes tracking impossible based solely on Onion address:**
+Direct `sysctl` hardening applied at the kernel level — only possible on bare metal:
 
-* **Response Size Padding:** All responses padded to uniform sizes (prevents size correlation)
-* **Timing Randomization:** Random delays prevent timing correlation attacks
-* **DNS Leak Prevention:** All DNS queries blocked except through Tor
-* **Header Removal:** ETag, Last-Modified, and all identifying headers removed
-* **No Access Logs:** Complete privacy (logs in RAM only)
-
----
-
-## 🛠️ Installation
-
-### Prerequisites
-
-* **Operating System:** Debian 11+ or Parrot OS
-* **Root Access:** Required for system-level configuration
-* **Disk Space:** At least 500MB free space
-
-### Method 1: Bare Metal Installation (Architect Installer)
-
-1. **Clone and Prepare:**
-```bash
-git clone https://github.com/ashardian/OnionSite-Aegis.git
-cd OnionSite-Aegis
-chmod +x install.sh
-
-```
-
-
-2. **Run the Installer:**
-```bash
-sudo ./install.sh
-
-```
-
-
-The v9.0 Architect Installer will prompts you to configure:
-* **WAF & IPS:** Enable for high security, disable for low RAM usage.
-* **Lua Padding:** Enable for anti-fingerprinting.
-* **SSH Access** CRITICAL: Enable this if you are using a Cloud VPS (AWS/DigitalOcean) to prevent lockout.
-* **Wipe Identity:** Choose to keep existing keys or generate new ones.
-
-
-3. **Get Your Onion Address:**
-```bash
-sudo cat /var/lib/tor/hidden_service/hostname
-
-```
-
-
-4. **Verify Installation:**
-```bash
-# Check services
-sudo systemctl status neural-sentry
-sudo systemctl status tor
-
-# Verify hidden service
-sudo test -f /var/lib/tor/hidden_service/hostname && echo "✓ Hidden service created"
-
-```
-
-
-
-### Method 2: Docker Installation
-
-See [DOCKER_DEPLOYMENT.md](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/DOCKER_DEPLOYMENT.md) for full details.
-
-```bash
-# Build and Run
-docker-compose build
-docker-compose up -d
-
-# Get Address
-docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
-
-```
+- Network privacy settings
+- Kernel pointer restrictions
+- Exploit mitigation flags
 
 ---
 
 ## 🔧 Maintenance
 
-### Edit Website (Securely)
-
-Use the built-in tool to handle permissions and reloading:
+### Edit Website Content
 
 ```bash
 sudo aegis-edit
-
 ```
-Monitor System Health
+
+### Monitor System Health
 
 ```bash
 sudo ./aegis_monitor.sh
 ```
 
-### Privacy Monitoring
-
-Check privacy status manually:
+### Check Privacy Status
 
 ```bash
 sudo /usr/local/bin/privacy_monitor.sh
-
 ```
 
-### Backup Tor Keys
+### Backup Tor Keys (CRITICAL)
 
-**CRITICAL:** Always backup your Tor keys to preserve your Onion address.
+⚠️ Losing your keys means losing your onion address forever.
 
 ```bash
-#Builtin Tool (Automatic)
+# Built-in tool (recommended)
 sudo ./SAVE_MY_ONION.sh
 
-#Manual
-
-# Bare metal
+# Manual backup
 sudo tar -czf onion-keys-backup-$(date +%Y%m%d).tar.gz /var/lib/tor/hidden_service/
-
-# Docker
-tar -czf onion-keys-backup-$(date +%Y%m%d).tar.gz data/tor-keys/
-
 ```
 
-### Log Sanitization
-
-Manually sanitize RAM logs if needed:
+### Uninstall
 
 ```bash
-sudo /usr/local/bin/privacy_log_sanitizer.py /mnt/ram_logs
-
+sudo ./uninstall.sh
 ```
 
 ---
 
 ## 📚 Documentation
 
-All documentation is available in the [`docs/`](https://github.com/ashardian/OnionSite-Aegis/tree/b9af589f979a265183835afe9004af87c05fa2f1/docs) directory:
+All documentation is in the [`docs/`](docs/) directory:
 
-* **[Docker Deployment Guide](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/DOCKER_DEPLOYMENT.md)** - Complete Docker deployment guide
-* **[Quick Start Guide](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/QUICKSTART.md)** - Quick start for both methods
-* **[Anti-Tracking Guide](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/ANTI_TRACKING_GUIDE.md)** - Comprehensive anti-tracking guide
-* **[Verification Report](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/VERIFICATION_REPORT.md)** - Verification and stability report
+- [Quick Start Guide](docs/QUICKSTART.md)
+- [Anti-Tracking Guide](docs/ANTI_TRACKING_GUIDE.md)
+- [Privacy Improvements](docs/PRIVACY_IMPROVEMENTS.md)
+- [Verification Report](docs/VERIFICATION_REPORT.md)
 
 ---
 
-## 🎯 Comparison: Docker vs Bare Metal
+## 📋 Changelog
 
-| Feature | Docker | Bare Metal |
-| --- | --- | --- |
-| **Isolation** | High | Low |
-| **Security** | Enhanced | Good |
-| **Setup Time** | 5 min | 10+ min |
-| **Maintenance** | Easy | Manual |
-| **Resource Control** | Built-in | Manual |
-| **Portability** | High | Low |
-| **Recommended** | ✅ Yes | For advanced users |
+### v10.0 — Bare Metal Edition
+- 🗑️ **Removed Docker support** — Docker was fundamentally incompatible with Aegis's core security stack (sysctl kernel hardening, NFTables, Tor Sandbox mode, tmpfs RAM logging). Bare metal only from this version forward.
+- 🔍 **`detect_tor_service()`** — New function that auto-detects whether the system uses `tor` or `tor@default` as the systemd service name. Fixes silent failures on Debian systems where Tor runs under a different unit name.
+- 📁 **`INSTALL_DIR` path fix** — Changed from `$(pwd)` to `$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)`. The installer now correctly resolves its own location even when run from a different working directory (e.g. `sudo /opt/OnionSite-Aegis/install.sh`).
+- 🛡️ **`set -E` added** — The ERR trap now fires inside functions and subshells, not just the top level. Prevents errors from being silently swallowed deep in the script.
+- ⏱️ **Privacy monitor systemd timer** — Privacy compliance checks now run automatically on a schedule as a proper `systemd` timer unit, instead of requiring manual execution.
+- 🧹 **Uninstaller updated** — `uninstall.sh` now correctly removes all systemd units added in v9.0+ (`privacy-monitor.timer`, `traffic-protection.service`, etc.) and handles both NFTables and UFW on cleanup.
+
+### v9.0 — Architect Edition
+- Integrated advanced NFTables balanced firewall (fixes Tor connectivity issues from v7/v8)
+- SSH Safety Valve — interactive prompt prevents Cloud VPS lockout
+- Post-install dashboard with live system HUD (`aegis_monitor.sh`)
+- Fixed all variable initialization crashes
+- Full RAM-disk compliance for anti-forensic logging
+
+### v7.0 / v8.0
+- Initial Docker + bare metal dual deployment
+- Neural Sentry v1–v4
+- Basic NFTables firewall (aggressive rate limiting — caused Tor blockages)
+
+---
 
 ## 🤝 Contributing
 
-This is a privacy-focused project. Contributions that enhance privacy and security are welcome.
+Privacy-focused contributions are welcome. See [ATTRIBUTION.md](ATTRIBUTION.md) for credit guidelines.
 
 ## 📄 License
 
-**MIT License - See [LICENSE](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/LICENSE) file for full terms.**
+**MIT License — See [LICENSE](LICENSE) for full terms.**
 
-**Attribution Requirements:**
-When using, redistributing, or showcasing OnionSite-Aegis, you must include copyright notices and give credit to the author. See [Attribution Guidelines](https://github.com/ashardian/OnionSite-Aegis/blob/b9af589f979a265183835afe9004af87c05fa2f1/docs/ATTRIBUTION.md).
+Attribution is required when using, redistributing, or showcasing OnionSite-Aegis. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ---
 
-**⚠️ WARNING:** This tool applies aggressive system hardening. Use on dedicated servers or fresh VMs only.
+**⚠️ WARNING:** This tool applies aggressive system hardening. Use on dedicated servers or fresh VMs only. The author is not responsible for illegal use of this software.

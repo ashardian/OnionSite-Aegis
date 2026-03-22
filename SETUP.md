@@ -1,12 +1,12 @@
-# 🚀 OnionSite-Aegis Setup Guide (v9.0 Architect)
+# 🚀 OnionSite-Aegis Setup Guide (v10.0 Bare Metal Edition)
 
-Complete setup instructions for both Docker and bare metal deployments.
+Complete setup instructions for bare metal deployment.
 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
-2. [Bare Metal Installation](#bare-metal-installation)
-3. [Docker Installation](#docker-installation)
+2. [Prerequisites](#prerequisites)
+3. [Installation](#installation)
 4. [Post-Installation](#post-installation)
 5. [Troubleshooting](#troubleshooting)
 6. [Maintenance](#maintenance)
@@ -15,152 +15,104 @@ Complete setup instructions for both Docker and bare metal deployments.
 
 ## Quick Start
 
-### Docker (Fastest)
-
 ```bash
-mkdir -p data/tor-keys webroot
-echo "<h1>My Site</h1>" > webroot/index.html
-docker-compose build && docker-compose up -d
-docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
-```
-
-Bare Metal (Architect Installer)
-
- Bash
-
-```bash
-sudo chmod +x install.sh
+git clone https://github.com/ashardian/OnionSite-Aegis.git
+cd OnionSite-Aegis
+chmod +x install.sh
 sudo ./install.sh
-# Follow the interactive prompts (Enable SSH if using Cloud VPS)
 sudo cat /var/lib/tor/hidden_service/hostname
 ```
 
-Bare Metal Installation
+---
 
-Step 1: Prerequisites
+## Prerequisites
 
-System Requirements:
-Debian 11+ (Bookworm/Trixie), Kali Linux, or Parrot OS (Ubuntu 20.04+ may work)
-Root/sudo access
-At least 500MB free disk space
-Internet connection
+**System Requirements:**
 
-Verify System:
+- Debian 11+ (Bookworm/Trixie), Kali Linux, or Parrot OS
+- Root/sudo access
+- At least 500MB free disk space
+- Internet connection
+- Dedicated server or fresh VM (not a shared host)
 
-Bash
+**Verify your system:**
 
 ```bash
-# Check OS
 cat /etc/os-release
-
-# Check disk space
 df -h /
-
-# Check if running as root
-whoami  # Should be 'root' or use sudo
+whoami  # Must be root or use sudo
 ```
 
-Step 2: Download and Extract
+---
 
-Bash
+## Installation
+
+### Step 1: Download
 
 ```bash
-# If downloaded as zip
-unzip OnionSite-Aegis.zip
-cd OnionSite-Aegis
-
-# Or if cloned from git
 git clone https://github.com/ashardian/OnionSite-Aegis.git
 cd OnionSite-Aegis
 ```
 
-Step 3: Run Installer (v9.0 Architect)
-
-The v9.0 installer is interactive. It will ask you to customize your security stack.
-
-Bash
+Or if downloaded as a zip:
 
 ```bash
-# Make executable
-sudo chmod +x install.sh
+unzip OnionSite-Aegis.zip
+cd OnionSite-Aegis
+```
 
-# Run installer
+### Step 2: Run the Architect Installer
+
+```bash
+chmod +x install.sh
 sudo ./install.sh
 ```
-```
-Configuration Prompts:
 
-You will be asked to enable or disable the following:
-ModSecurity WAF: [y/N] (Recommended for dynamic sites)
-Lua Response Padding: [y/N] (Recommended for anti-fingerprinting)
-Neural Sentry IPS: [y/N] (Active defense daemon)
-Privacy Monitor: [y/N] (Periodic compliance checks)
-Traffic Analysis Protection: [y/N] (Advanced timing randomization)
-SSH Access: [y/N] (CRITICAL: Enable this if using AWS/DigitalOcean/Linode to prevent lockout)
+The installer is interactive and will ask you to configure:
 
-What the v9.0 installer does:
-✅ Nuclear Sanitization: Purges "ghost configs" and conflicting modules.
-✅ Dependency Check: Installs Tor, Nginx, NDK, NFTables, Python packages.
-✅ Ram-Based Logging: Configures tmpfs for /var/log/tor (Anti-Forensics).
-✅ Balanced Firewall: Applies optimized NFTables rules that allow Tor connectivity while blocking attacks.
-✅ Tor Hardening: Configures Sandbox, V3 Hidden Service, and Privacy directives.
-✅ Nginx Architecture: Enforces correct load order (NDK -> Lua -> WAF).
-✅ Active Defense: Installs Neural Sentry and ModSecurity (if selected).
-✅ SSH Safety: Automatically whitelist SSH if selected to prevent lockout.
-```
-Expected Output:
+1. **ModSecurity WAF** `[Y/n]` — Recommended for production sites
+2. **Lua Response Padding** `[Y/n]` — Recommended for anti-fingerprinting
+3. **Neural Sentry IPS** `[Y/n]` — Active defense daemon
+4. **Privacy Monitor** `[Y/n]` — Periodic compliance checks
+5. **Traffic Analysis Protection** `[Y/n]` — Advanced timing randomization
+6. **SSH Access** `[y/N]` — **CRITICAL: Enable this if on a Cloud VPS (AWS/DigitalOcean/Linode) to prevent lockout**
 
-```
-=== ONIONSITE-AEGIS ARCHITECT v9.0 ===
-[INFO] Performing Pre-Flight Environment Checks...
-[INFO] Sanitizing Environment...
-[INFO] Installing Dependencies...
-[INFO] Configuring RAM Logging...
-[INFO] Hardening Tor Configuration...
-[INFO] Building Nginx Architecture...
-[INFO] Bootstrapping Network...
-Waiting for Onion Address generation..........
+**What the installer does:**
 
-================================================================
->>> SYSTEM ONLINE: abc123def456.onion <<<
-----------------------------------------------------------------
- [ON] WAF (ModSecurity)
- [ON] Lua (Padding)
- [ON] Neural Sentry
- [ON] SSH Access (Safe Mode)
-----------------------------------------------------------------
-Edit your site: sudo aegis-edit
-================================================================
-```
+- ✅ Nuclear Sanitization — Purges ghost configs and conflicting modules
+- ✅ Dependency Install — Tor, Nginx, NFTables, Python packages
+- ✅ RAM Logging — Configures tmpfs at `/var/log/tor` (anti-forensics)
+- ✅ Balanced Firewall — NFTables rules that allow Tor while blocking attacks
+- ✅ Tor Hardening — V3 Hidden Service, Sandbox, Privacy directives
+- ✅ Nginx Architecture — Correct module load order (NDK → Lua → WAF)
+- ✅ Active Defense — Neural Sentry and ModSecurity (if selected)
+- ✅ SSH Safety — Whitelist SSH in firewall if selected
 
-Step 4: Verify Installation
-
-Bash
+### Step 3: Get Your Onion Address
 
 ```bash
-# Check services are running
+sudo cat /var/lib/tor/hidden_service/hostname
+```
+
+### Step 4: Verify Installation
+
+```bash
+# Check all services
 sudo systemctl status tor
 sudo systemctl status nginx
 sudo systemctl status neural-sentry
 
-# Get your onion address
-sudo cat /var/lib/tor/hidden_service/hostname
-
-# Verify hidden service directory
+# Verify hidden service files exist
 sudo ls -la /var/lib/tor/hidden_service/
 # Should show: hostname, hs_ed25519_public_key, hs_ed25519_secret_key
 
-# Check RAM logs
-sudo ls -la /var/log/tor/
-# or
-sudo ls -la /mnt/ram_logs/
+# Confirm RAM logs are active
+sudo mount | grep tmpfs | grep tor
 ```
 
-Step 5: Add Your Content
+### Step 5: Add Your Website Content
 
-Use the built-in secure editor to avoid permission issues:
-
-Bash
+Use the built-in secure editor:
 
 ```bash
 sudo aegis-edit
@@ -168,242 +120,64 @@ sudo aegis-edit
 
 Or manually:
 
-Bash
-
 ```bash
-# Place your website files here
 sudo cp -r /path/to/your/website/* /var/www/onion_site/
-
-# Set correct permissions
 sudo chown -R www-data:www-data /var/www/onion_site
 sudo find /var/www/onion_site -type f -exec chmod 644 {} \;
 sudo find /var/www/onion_site -type d -exec chmod 755 {} \;
 ```
 
-Docker Installation
+---
 
-Step 1: Prerequisites
+## Post-Installation
 
-Required:
-Docker Engine 20.10+ (docker --version)
-Docker Compose 2.0+ (docker-compose --version)
+### Access Your Site
 
-Install Docker (if needed):
+1. Download Tor Browser from [https://www.torproject.org/download/](https://www.torproject.org/download/)
+2. Open Tor Browser
+3. Navigate to `http://your-address.onion`
 
-Bash
+### Important File Locations
 
-```bash
-# Debian/Ubuntu
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-newgrp docker
+| File | Path |
+|------|------|
+| Onion Address | `/var/lib/tor/hidden_service/hostname` |
+| Tor Keys | `/var/lib/tor/hidden_service/` |
+| Web Root | `/var/www/onion_site` |
+| Tor Logs (RAM) | `/var/log/tor/` |
+| Tor Config | `/etc/tor/torrc` |
+| Nginx Config | `/etc/nginx/sites-available/onion_site` |
 
-# Install Docker Compose
-sudo apt-get install docker-compose-plugin
-```
+### Backup Tor Keys (CRITICAL)
 
-Step 2: Prepare Directories
-
-Bash
+⚠️ **Losing your keys = losing your onion address forever. There is no recovery.**
 
 ```bash
-# Navigate to project directory
-cd OnionSite-Aegis
-
-# Create required directories
-mkdir -p data/tor-keys webroot
-
-# Create your web content
-cat > webroot/index.html <<EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Onion Site</title>
-</head>
-<body>
-    <h1>Welcome to My Onion Site</h1>
-    <p>This site is accessible only via Tor.</p>
-</body>
-</html>
-EOF
-```
-
-Step 3: Build and Run
-
-Bash
-
-```bash
-# Build the Docker image
-docker-compose build
-
-# Start the container
-docker-compose up -d
-
-# View logs (wait for "Onion address" message)
-docker-compose logs -f aegis
-```
-
-Expected Output:
-
-```
-[AEGIS] Starting OnionSite-Aegis v9.0 (Docker)
-[AEGIS] Setting up RAM-based logging...
-[AEGIS] Configuring Tor...
-[AEGIS] Creating hidden service directory...
-[AEGIS] Deploying Web Application Firewall...
-[AEGIS] Starting services...
-[AEGIS] Starting Tor...
-[AEGIS] Waiting for Tor to create hidden service hostname...
-[AEGIS] Hidden service hostname created successfully!
-[AEGIS] Onion address: abc123def456.onion
-[AEGIS] Starting Neural Sentry...
-[AEGIS] Starting Nginx...
-```
-
-Step 4: Get Your Onion Address
-
-Bash
-
-```bash
-# Method 1: From container
-docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
-
-# Method 2: From logs
-docker-compose logs aegis | grep "Onion address"
-
-# Method 3: From host (if volume mounted)
-cat data/tor-keys/hostname
-```
-
-Step 5: Verify Installation
-
-Bash
-
-```bash
-# Check container status
-docker-compose ps
-# Should show: State: Up, Health: healthy
-
-# Check health
-docker-compose exec aegis test -f /var/lib/tor/hidden_service/hostname && echo "✓ Hidden service created"
-
-# Check services inside container
-docker-compose exec aegis ps aux | grep -E 'tor|nginx|python'
-
-# View all logs
-docker-compose logs --tail=50 aegis
-```
-
-Step 6: Update Web Content
-
-Bash
-
-```bash
-# Edit files in webroot directory
-nano webroot/index.html
-
-# Changes are reflected immediately (volume is mounted)
-# No need to restart container
-```
-
-Post-Installation
-```bash
-Access Your Site
-Install Tor Browser: https://www.torproject.org/download/
-Open Tor Browser
-Navigate to: http://your-onion-address.onion
-Replace your-onion-address.onion with the address from /var/lib/tor/hidden_service/hostname
-```
-Important Files and Directories
-
-Bare Metal:
-- Onion Address: /var/lib/tor/hidden_service/hostname
-- Web Root: /var/www/onion_site
-- Logs: /var/log/tor/ or /mnt/ram_logs/ (RAM - volatile!)
-- Tor Config: /etc/tor/torrc
-- Nginx Config: /etc/nginx/sites-available/onion_site
-
-Docker:
-- Onion Address: data/tor-keys/hostname (on host)
-- Web Root: webroot/ (on host)
-- Logs: Inside container at /mnt/ram_logs/ (RAM - volatile!)
-- Container Name: onionsite-aegis
-
-Backup Tor Keys (CRITICAL!)
-
-⚠️ WARNING: Losing your Tor keys means losing your Onion address forever!
-
-Bare Metal:
-
-Bash
-
-```bash
-# Create backup (Use the included script for safety)
+# Built-in backup tool (recommended)
 sudo ./SAVE_MY_ONION.sh
 
-# Or Manual Backup
+# Manual backup
 sudo tar -czf onion-keys-backup-$(date +%Y%m%d).tar.gz /var/lib/tor/hidden_service/
 ```
 
-Docker:
+Store the backup encrypted and off-site.
 
-Bash
+---
 
-```bash
-# Backup the keys directory
-tar -czf onion-keys-backup-$(date +%Y%m%d).tar.gz data/tor-keys/
-```
+## Troubleshooting
 
-Monitoring
+### Hidden Service Not Created
 
-Check Service Status:
-
-Bash
+**Symptoms:** No `hostname` file, or address shows empty.
 
 ```bash
-# Bare Metal (Use the HUD v5.0)
-sudo ./aegis_monitor.sh
-
-# Docker
-docker-compose ps
-docker-compose logs --tail=50 aegis
-```
-
-View Logs:
-
-Bash
-
-```bash
-# Bare Metal (RAM logs - temporary!)
-sudo tail -f /var/log/tor/notices.log
-sudo tail -f /var/log/nginx/access.log
-
-# Docker
-docker-compose logs -f aegis
-```
-
-Troubleshooting
-
-Hidden Service Not Created
-
-Symptoms:
-No hostname file in /var/lib/tor/hidden_service/
-Onion address shows "Pending..." or empty
-
-Bare Metal Fix:
-
-Bash
-
-```bash
-# 1. Check Tor service
+# 1. Check Tor status
 sudo systemctl status tor
 
 # 2. Check Tor logs
 sudo tail -f /var/log/tor/notices.log
 
-# 3. Verify directory permissions
-sudo ls -la /var/lib/tor/hidden_service/
+# 3. Fix permissions
 sudo chown -R debian-tor:debian-tor /var/lib/tor/hidden_service
 sudo chmod 700 /var/lib/tor/hidden_service
 
@@ -413,91 +187,129 @@ sleep 10
 sudo cat /var/lib/tor/hidden_service/hostname
 ```
 
-NFTables Errors / SSH Lockout
+### SSH Lockout / NFTables Errors
 
-Symptoms:
-Job for nftables.service failed
-You cannot SSH into your server after install
+**Symptoms:** Cannot SSH in after install, or `nftables.service failed`.
 
-Fix:
-v9.0 includes an SSH Safety Valve. If you are locked out, you may need to access your VPS via the provider's Web Console (VNC) and run:
-
-Bash
+Access your server via your VPS provider's web console (VNC), then:
 
 ```bash
-# Emergency Flush
+# Emergency: flush all firewall rules
 sudo nft flush ruleset
 
-# Re-run installer and select 'YES' for SSH Access
+# Re-run installer and select YES for SSH Access
 sudo ./install.sh
 ```
 
-Service Won't Start (Nginx/Lua Error)
+### Nginx Fails to Start (Lua Error)
 
-Symptoms:
-undefined symbol: ndk_set_var_value
-Nginx fails to start
+**Symptoms:** `undefined symbol: ndk_set_var_value`
 
-Fix (v9.0 Architect):
-This is caused by incorrect module load order. Rerun the installer to apply the automatic fix:
-
-Bash
+This is a module load order issue. Re-running the installer fixes it automatically:
 
 ```bash
 sudo ./install.sh
 ```
 
-Maintenance
+Or fix manually:
 
-Update Web Content
+```bash
+sudo ln -sf /usr/share/nginx/modules-available/mod-http-ndk.conf /etc/nginx/modules-enabled/10-ndk.conf
+sudo ln -sf /usr/share/nginx/modules-available/mod-http-lua.conf /etc/nginx/modules-enabled/20-lua.conf
+sudo systemctl restart nginx
+```
 
-Bare Metal:
+### Can't Access Site via Tor Browser
 
-Bash
+Checklist:
+
+- ✅ Tor Browser is open and connected
+- ✅ Using `http://` not `https://`
+- ✅ Onion address is correct (check `hostname` file)
+- ✅ All services are running (`systemctl status tor nginx`)
+
+```bash
+# Test Nginx is responding locally
+curl -v http://127.0.0.1:80
+
+# Check what ports Nginx is listening on
+sudo ss -tulpn | grep nginx
+```
+
+---
+
+## Maintenance
+
+### Edit Website
 
 ```bash
 sudo aegis-edit
-# or
-sudo cp -r /path/to/new/content/* /var/www/onion_site/
-sudo chown -R www-data:www-data /var/www/onion_site
 ```
 
-Uninstallation
+### Monitor System (Live HUD)
 
-Bare Metal:
+```bash
+sudo ./aegis_monitor.sh
+```
 
-Bash
+### Check Privacy Compliance
+
+```bash
+sudo /usr/local/bin/privacy_monitor.sh
+```
+
+### View Logs
+
+```bash
+# Tor logs (RAM — lost on reboot by design)
+sudo tail -f /var/log/tor/notices.log
+
+# Nginx logs
+sudo tail -f /var/log/nginx/access.log
+```
+
+### Update Tor Config
+
+```bash
+sudo nano /etc/tor/torrc
+sudo systemctl restart tor
+```
+
+### Update Nginx Config
+
+```bash
+sudo nano /etc/nginx/sites-available/onion_site
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### Full Backup
+
+```bash
+sudo tar -czf aegis-backup-$(date +%Y%m%d).tar.gz \
+    /var/lib/tor/hidden_service/ \
+    /etc/tor/torrc \
+    /etc/nginx/sites-available/onion_site \
+    /var/www/onion_site
+```
+
+### Uninstall
 
 ```bash
 sudo ./uninstall.sh
 ```
 
-Docker:
+---
 
-Bash
+## Security Best Practices
 
-```bash
-docker-compose down
-docker-compose rm -f
-docker rmi onionsite-aegis  # Remove image
-rm -rf data/ webroot/  # Remove volumes (WARNING: Deletes Tor keys!)
-```
+- **Back up Tor keys** — Store encrypted, off-site, immediately after installation
+- **Use a dedicated machine** — Do not run other services on the same host
+- **Keep system updated** — `sudo apt update && sudo apt upgrade` regularly
+- **Monitor regularly** — Run `./aegis_monitor.sh` to check for threats
+- **Never disable RAM logging** — Persistent logs defeat the anti-forensics design
+- **Enable SSH safety valve** — Only if you need remote access via VPS console
 
-Security Best Practices
+---
 
-- Backup Tor Keys: Store encrypted backups off-site.
-- Use Strong Passwords: If implementing authentication.
-- Limit Access: Use firewall rules to restrict access.
-- Regular Backups: Backup web content and configurations.
-- Monitor Services: Use ./aegis_monitor.sh regularly.
-- Review Logs: Regularly review logs for anomalies.
-
-Support
-
-For issues, check:
-- This guide's troubleshooting section
-- Logs (/var/log/tor/ or docker-compose logs)
-- Service status (systemctl status or docker-compose ps)
-- Configuration files (/etc/tor/torrc, /etc/nginx/)
-
-⚠️ Remember: Logs are in RAM and will be lost on reboot. This is by design for privacy!
+⚠️ **Remember:** Logs are in RAM and will be lost on reboot. This is by design for privacy.

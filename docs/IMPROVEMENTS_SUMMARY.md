@@ -1,133 +1,136 @@
+# Improvements Summary
 
-# Improvements Summary - v9.0 Architect
+## v10.0 — Bare Metal Edition
 
-## Overview
-This document summarizes the improvements made to OnionSite-Aegis v9.0, focusing on the new "Balanced" firewall architecture, SSH safety mechanisms, and enhanced stability for bare-metal deployments.
+### 🗑️ Docker Support Removed
 
-## 🔥 Key Updates (v9.0)
+Docker was found to be fundamentally incompatible with Aegis's core security stack:
 
-### 1. Balanced Firewall (NFTables)
-- **Problem:** Previous versions (v7.0/v8.0) used aggressive rate-limiting that occasionally choked Tor circuit establishment, causing "Onion Site Not Found" errors.
-- **Solution (v9.0):** Implemented a "Balanced" NFTables ruleset.
-  - **DDoS Protection:** Blocks unsolicited external packets (anti-scanning).
-  - **Tor Permissive:** Explicitly allows "Established/Related" connections, ensuring reliable Tor directory fetch.
-  - **Output Control:** Allows Tor to communicate outward freely, but blocks incoming threats.
-  - **Logging:** Drops are logged with prefix `FIREWALL-DROP:`.
+| Feature | Problem in Docker |
+|---------|-------------------|
+| `sysctl` kernel hardening | Requires `--privileged`, which defeats container isolation |
+| NFTables firewall | Conflicts with Docker's own iptables/nftables on the host |
+| Tor `Sandbox 1` mode | Crashes due to container seccomp profile blocking required syscalls |
+| `tmpfs` RAM logging | Permission failures with `debian-tor` and `www-data` users in containers |
 
-### 2. SSH Safety Valve (Cloud Ready)
-- **Feature:** New interactive prompt during installation: `Allow SSH Access? [y/N]`
-- **Function:** If enabled, it automatically modifies the firewall to whitelist Port 22.
-- **Benefit:** Prevents accidental lockouts when deploying on Cloud VPS (AWS/DigitalOcean/Linode).
+Bare metal gives full, direct control over every security layer — which is the correct architecture for a privacy-hardened hidden service.
 
-### 3. Session-Based Monitoring HUD
-- **New Monitor:** `aegis_monitor.sh` v5.0 included.
-- **Session Logic:** Ignores historical logs. Only counts threats/warnings that occur *after* the monitor is started.
-- **Real-Time Stream:** Filters out debug noise and shows only active threats.
+---
 
-## 🐳 Docker Implementation (v9.0)
+### 🔍 `detect_tor_service()` — Auto Tor Service Detection
 
-### Security Features
-- **Container Isolation:** Internal bridge network (no external access)
-- **Read-only Web Content:** Webroot mounted as read-only
-- **Minimal Capabilities:** Only required Linux capabilities (NET_BIND_SERVICE, etc.)
-- **Seccomp Profile:** Restricted system calls (whitelist approach)
-- **Resources:** CPU and Memory caps to prevent DoS.
+**Problem:** On some Debian systems Tor runs as `tor@default`, on others as `tor`. The old installer hardcoded `tor@default` which caused silent failures on systems using the plain `tor` unit name.
 
-### Benefits Over Bare Metal
+**Fix:** New `detect_tor_service()` function checks which unit is actually registered via `systemctl list-unit-files` and sets `$TOR_SERVICE` accordingly. The rest of the installer uses this variable everywhere.
 
-| Feature | Docker | Bare Metal (v9.0) |
-|---------|--------|-------------------|
-| **Isolation** | High (container) | Low (host) |
-| **Security** | Enhanced (layers) | Hardened Host |
-| **Setup Time** | 5 minutes | 8 minutes |
-| **SSH Safety** | N/A (Host managed) | **Built-in Valve** |
-| **Firewall** | Container+Host | **Balanced NFTables** |
-
-## 📊 Comparison: v7.0 vs v9.0
-
-### Firewall Security
-**v7.0 (Previous):**
-- Aggressive rate limiting (5 conn/min)
-- Occasional Tor blockages
-- No SSH safety mechanism
-
-**v9.0 (Current):**
-- Balanced connection tracking
-- 100% Tor reliability
-- Integrated SSH safety valve
-- Simplified Input chain
-
-### Deployment Options
-**v7.0:**
-- Bare metal or Docker
-- Manual config for Cloud VPS
-
-**v9.0:**
-- Interactive Architect Installer
-- Cloud-ready (SSH prompt)
-- Automatic log sanitization path fixes
-
-## 🚀 Quick Start Comparison
-
-### Docker (Recommended)
 ```bash
-mkdir -p data/tor-keys webroot
-echo "<h1>Site</h1>" > webroot/index.html
-docker-compose up -d
-docker-compose exec aegis cat /var/lib/tor/hidden_service/hostname
+detect_tor_service() {
+    if systemctl list-unit-files 2>/dev/null | grep -q '^tor@\.service'; then
+        TOR_SERVICE="tor@default"
+    else
+        TOR_SERVICE="tor"
+    fi
+}
 ```
-Bare Metal (Architect v9.0)
-Bash
-sudo ./install.sh
-# Answer 'Y' to enable SSH if on Cloud VPS
-sudo cat /var/lib/tor/hidden_service/hostname
-🔒 Security Layers (v9.0)
-Firewall Enhancements
-Input Blocking: Drops all new external connections not matched by loopback or established state.
 
-Tor Optimization: "Established/Related" rule ensures Tor directory fetches succeed.
+---
 
-SSH Valve: Optional, user-controlled hole for remote management.
+### 📁 `INSTALL_DIR` Path Resolution Fix
 
-Docker Security
-Isolation: Complete container isolation
+**Problem:** The old installer used `INSTALL_DIR=$(pwd)`, which breaks if you run it from a different directory — e.g. `sudo /opt/OnionSite-Aegis/install.sh` would set `INSTALL_DIR` to `/opt` instead of `/opt/OnionSite-Aegis`.
 
-Capabilities: Minimal required capabilities
+**Fix:** Changed to `BASH_SOURCE`-based resolution:
 
-Seccomp: Restricted system calls
+```bash
+INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+```
 
-AppArmor: Additional access control
+Now the installer always knows where it lives, regardless of where it is called from.
 
-Resource Limits: CPU and memory limits
+---
 
-📝 Documentation Updates
-QUICKSTART.md - Updated for v9.0 steps
+### 🛡️ `set -E` — Deeper Error Propagation
 
-install.sh - Updated with v9.0 logic
+**Problem:** The original `set -o pipefail` + `trap ... ERR` only caught errors at the top level of the script. Errors inside functions or subshells could be silently swallowed.
 
-IMPROVEMENTS_SUMMARY.md - This file
+**Fix:** Added `set -E`, which causes the ERR trap to inherit into functions, command substitutions, and subshells. No error goes undetected.
 
-✅ Testing Checklist
-v9.0 Deployment
-[ ] Installer runs without "unary operator" errors
+---
 
-[ ] SSH prompt appears and functions
+### ⏱️ Privacy Monitor as systemd Timer
 
-[ ] Firewall rules permit Tor bootstrapping
+**Problem:** The privacy compliance checker (`privacy_monitor.sh`) previously had to be run manually. Most users would forget to run it.
 
-[ ] Onion address generates within 60 seconds
+**Fix:** The installer now registers it as a proper `systemd` timer unit so it runs automatically on a schedule:
 
-[ ] Neural Sentry logs to RAM correctly
+```
+privacy-monitor.service  — runs the check
+privacy-monitor.timer    — triggers it periodically
+```
 
-🎉 Summary
-The v9.0 update brings:
+Enabled automatically during install if `ENABLE_PRIVACY=1`.
 
-✅ Stability: Fixed Tor connectivity issues via Balanced Firewall.
+---
 
-✅ Usability: SSH Safety Valve for Cloud deployments.
+### 🧹 Uninstaller Completeness
 
-✅ Reliability: Fixed installer variable crashes.
+**Problem:** `uninstall.sh` in v9.0 did not clean up all systemd units added by the installer.
 
-✅ Monitoring: New Session-Based HUD.
+**Fix:** Updated to remove all units:
+- `neural-sentry.service`
+- `aegis-ram-init.service`
+- `privacy-monitor.service`
+- `privacy-monitor.timer`
+- `traffic-protection.service`
 
-All improvements maintain the privacy-first philosophy while significantly enhancing stability and ease of deployment.
+Also now handles both **NFTables** and **UFW** cleanup gracefully, skipping whichever is not present on the system.
+
+---
+
+## v9.0 — Architect Edition
+
+### Balanced NFTables Firewall
+
+**Problem:** v7/v8 used aggressive rate limiting (5 conn/min) that occasionally blocked Tor circuit establishment, causing "Onion Site Not Found" errors.
+
+**Fix:** New "balanced" ruleset explicitly allows `ct state established,related` traffic, ensuring Tor directory fetches always succeed while still blocking unsolicited input.
+
+### SSH Safety Valve
+
+Interactive prompt during install: `Allow SSH Access? [y/N]`
+
+If enabled, automatically modifies the firewall to whitelist port 22. Prevents accidental lockouts on Cloud VPS deployments (AWS, DigitalOcean, Linode).
+
+### Session-Based Monitoring HUD
+
+`aegis_monitor.sh` v5.0 — ignores historical log noise, only tracks threats from the current session. Live CPU/RAM tracking for Tor and Nginx processes.
+
+### Variable Initialization Fixes
+
+All state flags (`ENABLE_WAF`, `ENABLE_LUA`, etc.) now initialized before use, preventing `unary operator expected` crashes on some systems.
+
+---
+
+## v7.0 / v8.0 — Earlier Versions
+
+- Initial dual Docker + bare metal support
+- Neural Sentry v1–v4
+- Basic NFTables firewall (aggressive — caused Tor blockages)
+- Manual privacy monitor
+
+---
+
+## 📊 Version Comparison
+
+| Feature | v7/v8 | v9.0 | v10.0 |
+|---------|-------|------|-------|
+| Docker support | ✅ | ✅ | ❌ Removed |
+| Tor service auto-detect | ❌ | ❌ | ✅ |
+| Safe INSTALL_DIR | ❌ | ❌ | ✅ |
+| set -E error propagation | ❌ | ❌ | ✅ |
+| Privacy monitor (auto) | ❌ | ❌ | ✅ systemd timer |
+| SSH Safety Valve | ❌ | ✅ | ✅ |
+| Balanced NFTables | ❌ | ✅ | ✅ |
+| Session HUD | ❌ | ✅ | ✅ |
+| Amnesic RAM logging | ✅ | ✅ | ✅ |
+| Neural Sentry | ✅ | ✅ | ✅ |
