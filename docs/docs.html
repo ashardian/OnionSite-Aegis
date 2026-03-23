@@ -101,11 +101,12 @@
             margin-left:var(--sidebar-w);
             flex:1;
             padding:48px 48px 80px;
-            max-width:900px;
+            max-width:min(900px, calc(100vw - var(--sidebar-w)));
+            width:100%;
         }
 
         /* Sections */
-        .doc-section { margin-bottom:80px; scroll-margin-top:100px; }
+        .doc-section { margin-bottom:80px; scroll-margin-top:100px; min-width:0; overflow:hidden; }
         .doc-section:last-child { margin-bottom:0; }
 
         /* Section header */
@@ -132,6 +133,8 @@
             margin-bottom:20px;
             backdrop-filter:blur(8px);
             transition:border-color .2s;
+            overflow:hidden;
+            min-width:0;
         }
         .doc-card:hover { border-color:rgba(0,240,255,.2); }
         .doc-card h3 { font-size:1rem; font-weight:700; color:#fff; margin-bottom:10px; }
@@ -148,9 +151,10 @@
             overflow:hidden;
             margin:16px 0;
             font-family:'JetBrains Mono',monospace;
+            max-width:100%;
         }
         .code-header {
-            display:flex; align-items:center; justify-content:space-between;
+            display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;
             padding:8px 16px;
             background:rgba(255,255,255,.04);
             border-bottom:1px solid rgba(255,255,255,.06);
@@ -166,6 +170,7 @@
             padding:18px 20px; overflow-x:auto;
             font-size:.82rem; line-height:1.75;
             color:rgba(255,255,255,.75);
+            white-space:pre; word-break:normal; overflow-wrap:normal;
         }
         code.inline {
             font-family:'JetBrains Mono',monospace;
@@ -173,6 +178,7 @@
             background:rgba(255,255,255,.07);
             color:var(--brand-green);
             padding:2px 7px; border-radius:4px;
+            word-break:break-word; overflow-wrap:anywhere;
         }
 
         /* Tables */
@@ -213,7 +219,7 @@
         .step-body p { color:rgba(255,255,255,.5); font-size:.855rem; line-height:1.7; }
 
         /* File table */
-        .file-row { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; border-radius:8px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.05); margin-bottom:5px; font-size:.82rem; }
+        .file-row { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:4px 12px; padding:9px 14px; border-radius:8px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.05); margin-bottom:5px; font-size:.82rem; }
         .file-row:hover { background:rgba(255,255,255,.055); }
         .file-name { font-family:'JetBrains Mono',monospace; color:var(--brand-green); }
         .file-desc { color:rgba(255,255,255,.45); font-size:.78rem; }
@@ -227,26 +233,57 @@
             background:rgba(2,2,3,.92); backdrop-filter:blur(16px);
             border-bottom:1px solid rgba(255,255,255,.06);
             display:flex; align-items:center;
-            padding:0 24px; gap:16px;
+            padding:0 24px; gap:12px;
+            overflow:hidden;
         }
-        .nav-brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
-        .nav-title { font-size:1rem; font-weight:800; color:#fff; }
-        .nav-sub { font-size:.7rem; color:rgba(255,255,255,.35); font-family:'JetBrains Mono',monospace; }
+        .nav-brand { display:flex; align-items:center; gap:10px; text-decoration:none; flex-shrink:0; }
+        .nav-title { font-size:1rem; font-weight:800; color:#fff; white-space:nowrap; }
+        .nav-sub { font-size:.7rem; color:rgba(255,255,255,.35); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
         .nav-back {
             display:flex; align-items:center; gap:6px;
             text-decoration:none; font-size:.82rem; color:rgba(255,255,255,.5);
             padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,.1);
-            transition:all .2s; margin-left:auto;
+            transition:all .2s; white-space:nowrap; flex-shrink:0;
         }
         .nav-back:hover { color:#fff; border-color:rgba(0,240,255,.4); background:rgba(0,240,255,.06); }
         .nav-github {
             display:flex; align-items:center; gap:6px;
             text-decoration:none; font-size:.82rem; color:rgba(255,255,255,.6);
             padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,.1);
-            transition:all .2s;
+            transition:all .2s; white-space:nowrap; flex-shrink:0;
         }
         .nav-github:hover { color:#fff; border-color:rgba(255,255,255,.3); }
-        .nav-sep { color:rgba(255,255,255,.12); font-size:.9rem; }
+        .nav-sep { color:rgba(255,255,255,.12); font-size:.9rem; flex-shrink:0; }
+
+        /* Requirements grid — card-based, mobile-friendly */
+        .req-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; margin:16px 0; }
+        .req-item { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:14px 16px; }
+        .req-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.35); margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
+        .req-value { font-size:.875rem; margin-bottom:4px; }
+        .req-note { font-size:.78rem; color:rgba(255,255,255,.38); line-height:1.5; }
+
+        /* Prompt list — install options, mobile-friendly */
+        .prompt-list { display:flex; flex-direction:column; gap:6px; }
+        .prompt-row { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:start; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:8px; padding:10px 14px; }
+        .prompt-name { font-size:.855rem; color:#fff; font-weight:600; grid-column:1; }
+        .prompt-note { font-size:.775rem; color:rgba(255,255,255,.4); grid-column:1 / -1; margin-top:2px; }
+
+        /* Version comparison — div-based 4-col grid */
+        .vc-table { border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.07); margin:0; }
+        .vc-head { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:0; background:rgba(255,255,255,.05); padding:10px 14px; font-size:.78rem; font-weight:700; color:rgba(255,255,255,.6); border-bottom:1px solid rgba(255,255,255,.08); }
+        .vc-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:0; padding:9px 14px; border-bottom:1px solid rgba(255,255,255,.04); font-size:.82rem; align-items:center; transition:background .15s; }
+        .vc-row:last-child { border-bottom:none; }
+        .vc-row:hover { background:rgba(255,255,255,.025); }
+        .vc-feat { color:rgba(255,255,255,.7); }
+        .vc-ver { text-align:left; }
+
+        /* Verification list — 3-col responsive */
+        .verif-list { display:flex; flex-direction:column; gap:6px; }
+        .verif-row { display:grid; grid-template-columns:1fr auto; grid-template-rows:auto auto; gap:3px 12px; align-items:center; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:8px; padding:10px 14px; }
+        .verif-name { font-size:.855rem; color:#fff; font-weight:600; grid-column:1; grid-row:1; }
+        .verif-name .inline { font-size:.78em; }
+        .verif-row > .pill { grid-column:2; grid-row:1 / span 2; align-self:center; white-space:nowrap; }
+        .verif-note { font-size:.775rem; color:rgba(255,255,255,.4); grid-column:1; grid-row:2; }
 
         /* Mobile sidebar toggle */
         .sidebar-toggle {
@@ -254,7 +291,16 @@
             width:48px; height:48px; border-radius:50%;
             background:var(--brand-green); color:#000; border:none;
             font-size:1.1rem; cursor:pointer; box-shadow:0 4px 20px rgba(0,240,255,.4);
+            transition:transform .2s;
         }
+        .sidebar-toggle:active { transform:scale(.92); }
+
+        /* Sidebar overlay backdrop */
+        .sidebar-backdrop {
+            display:none; position:fixed; inset:0; z-index:39;
+            background:rgba(0,0,0,.65); backdrop-filter:blur(2px);
+        }
+        .sidebar-backdrop.visible { display:block; }
 
         /* Dividers */
         .doc-divider { height:1px; background:rgba(255,255,255,.06); margin:32px 0; }
@@ -262,20 +308,126 @@
         /* Version badge */
         .v-badge { display:inline-flex; align-items:center; gap:6px; font-size:.72rem; font-family:'JetBrains Mono',monospace; padding:3px 10px; border-radius:100px; background:rgba(0,240,255,.08); border:1px solid rgba(0,240,255,.2); color:var(--brand-green); }
 
-        /* Progress/checklist */
+        /* Checklist */
         .checklist li { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; font-size:.875rem; color:rgba(255,255,255,.55); line-height:1.6; }
         .checklist li i { margin-top:3px; flex-shrink:0; }
 
+        /* ── TABLET (≤900px) ── */
         @media(max-width:900px) {
-            .sidebar { transform:translateX(-100%); }
+            .sidebar {
+                transform:translateX(-100%);
+                top:0; padding-top:88px;
+                width:min(var(--sidebar-w), 85vw);
+                box-shadow:4px 0 32px rgba(0,0,0,.5);
+                z-index:50;
+            }
             .sidebar.open { transform:translateX(0); }
-            .docs-content { margin-left:0; padding:32px 20px 60px; }
+            .docs-content { margin-left:0; padding:32px 24px 80px; max-width:100%; }
             .sidebar-toggle { display:flex; align-items:center; justify-content:center; }
             .section-h2 { font-size:1.5rem; }
+            .top-nav { padding:0 14px; gap:8px; }
+            .nav-sep { display:none; }
+            .nav-sub { display:none; }
+            .nav-github span { display:none; }
+            .nav-back span { display:none; }
+            /* table scroll on tablet too */
+            .doc-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+            .doc-table { min-width:460px; }
         }
+
+        /* ── MOBILE (≤600px) ── */
         @media(max-width:600px) {
-            .docs-content { padding:24px 16px 60px; }
-            .doc-card { padding:20px; }
+            .docs-layout { padding-top:60px; }
+            .docs-content { padding:18px 14px 88px; max-width:100%; }
+            .doc-card { padding:16px 14px; }
+            .section-h2 { font-size:1.25rem; }
+            .section-lead { font-size:.865rem; margin-bottom:20px; }
+            .doc-section { margin-bottom:56px; }
+
+            /* Nav shrinks */
+            .top-nav { height:60px; padding:0 10px; gap:6px; }
+            .sidebar { top:0; padding-top:70px; }
+            .sidebar-toggle { bottom:18px; left:14px; width:44px; height:44px; font-size:.95rem; }
+
+            /* Tables always scroll */
+            .doc-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; border:1px solid rgba(255,255,255,.06); }
+            .doc-table { min-width:440px; font-size:.78rem; }
+            .doc-table th, .doc-table td { padding:8px 10px; }
+
+            /* Matrix rows — 2-col layout */
+            .matrix-row {
+                display:flex; flex-direction:column; gap:4px;
+                padding:10px 12px; font-size:.78rem;
+            }
+            .matrix-row > span:nth-child(1) { color:#fff; font-weight:600; font-size:.82rem; }
+            .matrix-row > span:nth-child(2) { color:rgba(255,255,255,.4); font-size:.75rem; }
+            .matrix-row > span:nth-child(3) { align-self:flex-start; margin-top:2px; }
+
+            /* File rows — stack */
+            .file-row { flex-direction:column; align-items:flex-start; gap:3px; padding:10px 12px; }
+            .file-name { font-size:.76rem; word-break:break-all; }
+            .file-desc { font-size:.72rem; }
+
+            /* Steps */
+            .step { gap:12px; }
+            .step-num { width:28px; height:28px; font-size:.72rem; flex-shrink:0; }
+            .step-body h4 { font-size:.875rem; }
+            .step-body p { font-size:.82rem; }
+
+            /* Code blocks */
+            .code-block pre { font-size:.74rem; line-height:1.65; padding:12px 12px; }
+            .code-block pre * { word-break:break-word; }
+            .code-header { padding:7px 10px; }
+            .code-copy-btn { font-size:.68rem; padding:3px 8px; }
+
+            /* Alerts */
+            .alert { padding:12px 13px; font-size:.82rem; gap:9px; }
+
+            /* Doc cards */
+            .doc-card ul li { font-size:.82rem; gap:7px; }
+            .doc-card p { font-size:.84rem; }
+            .doc-card h3 { font-size:.95rem; }
+
+            /* Section badges */
+            .section-badge { font-size:.62rem; padding:3px 10px; }
+
+            /* Pills inline */
+            .pill { font-size:.68rem; }
+
+            /* Inline code */
+            code.inline { font-size:.76em; }
+
+            /* Version comparison table — scroll on mobile */
+            .vc-table { overflow-x:auto; }
+            .vc-head, .vc-row { grid-template-columns:1.6fr 0.8fr 0.8fr 0.8fr; font-size:.74rem; padding:8px 10px; }
+
+            /* Verif list */
+            .verif-name { font-size:.82rem; }
+            .verif-note { font-size:.73rem; }
+
+            /* Req grid — single column */
+            .req-grid { grid-template-columns:1fr; }
+
+            /* Prompt row */
+            .prompt-name { font-size:.82rem; }
+            .prompt-note { font-size:.73rem; }
+
+            /* Doc divider tighter */
+            .doc-divider { margin:24px 0; }
+        }
+
+        /* ── VERY SMALL (≤400px) ── */
+        @media(max-width:400px) {
+            .top-nav { padding:0 8px; gap:4px; }
+            .nav-title { font-size:.82rem; }
+            .nav-back, .nav-github { padding:5px 9px; font-size:.74rem; }
+            .docs-content { padding:14px 10px 88px; }
+            .doc-card { padding:13px 11px; }
+            .section-h2 { font-size:1.1rem; }
+            .doc-table { min-width:380px; }
+            .doc-table th, .doc-table td { padding:7px 8px; font-size:.74rem; }
+            .vc-head, .vc-row { font-size:.7rem; padding:7px 8px; gap:0; }
+            .vc-table { font-size:.7rem; }
         }
     </style>
 </head>
@@ -284,7 +436,7 @@
     <!-- Top Nav -->
     <nav class="top-nav">
         <a class="nav-brand" href="index.html">
-            <div style="width:36px;height:36px;background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.25);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:36px;height:36px;background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.25);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <i class="fa-solid fa-shield-halved" style="color:var(--brand-green);font-size:1rem;"></i>
             </div>
             <div>
@@ -293,15 +445,20 @@
             </div>
         </a>
         <span class="nav-sep">|</span>
-        <span style="font-size:.78rem;color:rgba(255,255,255,.3);font-family:'JetBrains Mono',monospace;">Bare Metal Edition</span>
+        <span class="nav-sub" style="color:rgba(255,255,255,.3);font-family:'JetBrains Mono',monospace;font-size:.78rem;white-space:nowrap;">Bare Metal Edition</span>
 
-        <a href="https://github.com/ashardian/OnionSite-Aegis" target="_blank" rel="noopener noreferrer" class="nav-github">
-            <i class="fab fa-github"></i> GitHub
-        </a>
-        <a href="index.html" class="nav-back">
-            <i class="fa-solid fa-arrow-left"></i> Main Page
-        </a>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            <a href="https://github.com/ashardian/OnionSite-Aegis" target="_blank" rel="noopener noreferrer" class="nav-github">
+                <i class="fab fa-github"></i><span> GitHub</span>
+            </a>
+            <a href="index.html" class="nav-back">
+                <i class="fa-solid fa-arrow-left"></i><span> Main Page</span>
+            </a>
+        </div>
     </nav>
+
+    <!-- Sidebar backdrop (mobile) -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
     <div class="docs-layout">
 
@@ -390,18 +547,43 @@
                 <h2 class="section-h2">System Requirements</h2>
                 <p class="section-lead">Aegis v10.0 is a bare-metal-only tool. Docker support was permanently removed because it conflicts with kernel-level sysctl hardening, NFTables management, Tor Sandbox mode, and tmpfs RAM logging.</p>
 
-                <table class="doc-table">
-                    <thead><tr><th>Component</th><th>Requirement</th><th>Notes</th></tr></thead>
-                    <tbody>
-                        <tr><td>Operating System</td><td><span class="pill pill-green">Debian 13 Trixie</span></td><td>Also Kali Linux, Parrot OS, Debian 11+</td></tr>
-                        <tr><td>Privileges</td><td><span class="pill pill-red">root required</span></td><td>Modifies kernel, systemd, firewall</td></tr>
-                        <tr><td>Disk space</td><td>500MB minimum</td><td>Logs stay in RAM — disk mainly for packages</td></tr>
-                        <tr><td>RAM</td><td>512MB+</td><td>10MB reserved for tmpfs log disk</td></tr>
-                        <tr><td>Network</td><td>Internet access</td><td>WAF config + unicode.mapping downloaded from GitHub</td></tr>
-                        <tr><td>Tor service unit</td><td><code class="inline">tor@default</code></td><td>Auto-detected on Debian 13. Classic <code class="inline">tor</code> also supported.</td></tr>
-                        <tr><td>Deployment type</td><td>Dedicated machine or VM</td><td>Do not share host with other services</td></tr>
-                    </tbody>
-                </table>
+                <div class="req-grid">
+                    <div class="req-item">
+                        <div class="req-label">Operating System</div>
+                        <div class="req-value"><span class="pill pill-green">Debian 13 Trixie</span></div>
+                        <div class="req-note">Also Kali Linux, Parrot OS, Debian 11+</div>
+                    </div>
+                    <div class="req-item">
+                        <div class="req-label">Privileges</div>
+                        <div class="req-value"><span class="pill pill-red">root required</span></div>
+                        <div class="req-note">Modifies kernel, systemd, and firewall</div>
+                    </div>
+                    <div class="req-item">
+                        <div class="req-label">Disk Space</div>
+                        <div class="req-value" style="color:#fff;font-weight:600;">500MB minimum</div>
+                        <div class="req-note">Logs stay in RAM — disk mainly for packages</div>
+                    </div>
+                    <div class="req-item">
+                        <div class="req-label">RAM</div>
+                        <div class="req-value" style="color:#fff;font-weight:600;">512MB+</div>
+                        <div class="req-note">10MB reserved for tmpfs log disk</div>
+                    </div>
+                    <div class="req-item">
+                        <div class="req-label">Network</div>
+                        <div class="req-value" style="color:#fff;font-weight:600;">Internet access</div>
+                        <div class="req-note">WAF config + unicode.mapping downloaded from GitHub</div>
+                    </div>
+                    <div class="req-item">
+                        <div class="req-label">Tor Service Unit</div>
+                        <div class="req-value"><code class="inline">tor@default</code></div>
+                        <div class="req-note">Auto-detected on Debian 13. Classic <code class="inline">tor</code> also supported.</div>
+                    </div>
+                    <div class="req-item">
+                        <div class="req-label">Deployment Type</div>
+                        <div class="req-value" style="color:#fff;font-weight:600;">Dedicated machine or VM</div>
+                        <div class="req-note">Do not share host with other services</div>
+                    </div>
+                </div>
 
                 <div class="code-block">
                     <div class="code-header"><span>bash — verify your system</span></div>
@@ -450,17 +632,14 @@ whoami                <span style="color:rgba(255,255,255,.3)"># Must be root or
                         <div class="step-body">
                             <h4>Answer the interactive prompts</h4>
                             <p>Press Enter to accept the default (Yes) for each module, or type <code class="inline">n</code> to disable. All defaults are production-recommended.</p>
-                            <table class="doc-table" style="margin-top:10px;">
-                                <thead><tr><th>Prompt</th><th>Default</th><th>When to disable</th></tr></thead>
-                                <tbody>
-                                    <tr><td>ModSecurity WAF</td><td><span class="pill pill-green">Y</span></td><td>Very low RAM (&lt;256MB)</td></tr>
-                                    <tr><td>Lua Response Padding</td><td><span class="pill pill-green">Y</span></td><td>Rarely — always recommended</td></tr>
-                                    <tr><td>Neural Sentry IPS</td><td><span class="pill pill-green">Y</span></td><td>If Python is unavailable</td></tr>
-                                    <tr><td>Privacy Monitor</td><td><span class="pill pill-green">Y</span></td><td>Never — leave this on</td></tr>
-                                    <tr><td>Traffic Analysis Protection</td><td><span class="pill pill-green">Y</span></td><td>Never — leave this on</td></tr>
-                                    <tr><td>SSH Access</td><td><span class="pill pill-red">N</span></td><td>Enable only on Cloud VPS</td></tr>
-                                </tbody>
-                            </table>
+                            <div class="prompt-list" style="margin-top:12px;">
+                                <div class="prompt-row"><div class="prompt-name">ModSecurity WAF</div><div><span class="pill pill-green">Y (default)</span></div><div class="prompt-note">Disable only if RAM &lt; 256MB</div></div>
+                                <div class="prompt-row"><div class="prompt-name">Lua Response Padding</div><div><span class="pill pill-green">Y (default)</span></div><div class="prompt-note">Always recommended</div></div>
+                                <div class="prompt-row"><div class="prompt-name">Neural Sentry IPS</div><div><span class="pill pill-green">Y (default)</span></div><div class="prompt-note">Disable if Python unavailable</div></div>
+                                <div class="prompt-row"><div class="prompt-name">Privacy Monitor</div><div><span class="pill pill-green">Y (default)</span></div><div class="prompt-note">Never disable</div></div>
+                                <div class="prompt-row"><div class="prompt-name">Traffic Analysis Protection</div><div><span class="pill pill-green">Y (default)</span></div><div class="prompt-note">Never disable</div></div>
+                                <div class="prompt-row"><div class="prompt-name">SSH Access</div><div><span class="pill pill-red">N (default)</span></div><div class="prompt-note">Enable only on Cloud VPS</div></div>
+                            </div>
                         </div>
                     </div>
                     <div class="step">
@@ -557,7 +736,7 @@ sudo tar -czf onion-backup-$(date +%Y%m%d).tar.gz /var/lib/tor/hidden_service/</
                     </ul>
                 </div>
 
-                <table class="doc-table">
+                <div class="doc-table-wrap"><table class="doc-table">
                     <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
                     <tbody>
                         <tr><td>Systemd unit</td><td><code class="inline">neural-sentry.service</code></td></tr>
@@ -567,7 +746,7 @@ sudo tar -czf onion-backup-$(date +%Y%m%d).tar.gz /var/lib/tor/hidden_service/</
                         <tr><td>Restart policy</td><td><code class="inline">always</code></td></tr>
                         <tr><td>Runs as</td><td><code class="inline">root</code></td></tr>
                     </tbody>
-                </table>
+                </table></div>
 
                 <div class="code-block">
                     <div class="code-header"><span>bash — manage neural sentry</span></div>
@@ -781,7 +960,7 @@ curl -I http://127.0.0.1/ | grep -i "server\|etag\|last-modified\|x-powered"</pr
                 <h2 class="section-h2">Automated Privacy Compliance Monitor</h2>
                 <p class="section-lead">A systemd timer that continuously verifies your privacy posture — not just at install time, but throughout the life of the service.</p>
 
-                <table class="doc-table">
+                <div class="doc-table-wrap"><table class="doc-table">
                     <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
                     <tbody>
                         <tr><td>Timer unit</td><td><code class="inline">privacy-monitor.timer</code></td></tr>
@@ -790,7 +969,7 @@ curl -I http://127.0.0.1/ | grep -i "server\|etag\|last-modified\|x-powered"</pr
                         <tr><td>Boot delay</td><td>2 minutes after boot</td></tr>
                         <tr><td>Script</td><td><code class="inline">/usr/local/bin/privacy_monitor.sh</code></td></tr>
                     </tbody>
-                </table>
+                </table></div>
 
                 <div class="doc-card">
                     <h3>What it checks</h3>
@@ -1019,22 +1198,25 @@ sleep 15 && sudo cat /var/lib/tor/hidden_service/hostname</pre>
                 </div>
 
                 <h3 style="color:#fff;font-size:1rem;font-weight:700;margin:28px 0 14px;">Version Comparison</h3>
-                <table class="doc-table">
-                    <thead><tr><th>Feature</th><th>v7/v8</th><th>v9.0</th><th>v10.0</th></tr></thead>
-                    <tbody>
-                        <tr><td>Docker support</td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-red">Removed</span></td></tr>
-                        <tr><td>Tor service auto-detect</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>BASH_SOURCE INSTALL_DIR</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>set -E error propagation</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>Privacy monitor auto-run</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓ timer</span></td></tr>
-                        <tr><td>unicode.mapping auto-deploy</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>Pre-firewall nginx check</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>SSH Safety Valve</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>Balanced NFTables</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>Amnesic RAM logging</td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                        <tr><td>Neural Sentry</td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
-                    </tbody>
-                </table>
+                <div class="vc-table">
+                    <div class="vc-head">
+                        <div class="vc-feat">Feature</div>
+                        <div class="vc-ver">v7/v8</div>
+                        <div class="vc-ver">v9.0</div>
+                        <div class="vc-ver" style="color:var(--brand-green);">v10.0</div>
+                    </div>
+                    <div class="vc-row"><div class="vc-feat">Docker support</div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-red">Removed</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">Tor service auto-detect</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">BASH_SOURCE path fix</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">set -E error propagation</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">Privacy monitor auto-run</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓ timer</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">unicode.mapping auto-deploy</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">Pre-firewall nginx check</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">SSH Safety Valve</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">Balanced NFTables</div><div><span class="pill pill-red">✗</span></div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">Amnesic RAM logging</div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-green">✓</span></div></div>
+                    <div class="vc-row"><div class="vc-feat">Neural Sentry</div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-green">✓</span></div><div><span class="pill pill-green">✓</span></div></div>
+                </div>
             </section>
 
             <div class="doc-divider"></div>
@@ -1090,21 +1272,18 @@ sleep 15 && sudo cat /var/lib/tor/hidden_service/hostname</pre>
                     <div><strong>Status: STABLE — VERIFIED ON LIVE DEBIAN 13 TRIXIE DEPLOYMENT</strong><br>nginx active · tor@default active · ModSecurity WAF blocking · Onion address generated · Privacy Monitor running</div>
                 </div>
 
-                <table class="doc-table">
-                    <thead><tr><th>Component</th><th>Status</th><th>Notes</th></tr></thead>
-                    <tbody>
-                        <tr><td>install.sh</td><td><span class="pill pill-green">✓ Valid</span></td><td>bash -n syntax clean, all 6 bugs fixed</td></tr>
-                        <tr><td>nginx + ModSecurity WAF</td><td><span class="pill pill-green">✓ Verified</span></td><td>Blocking mode, unicode.mapping resolved</td></tr>
-                        <tr><td>tor@default.service</td><td><span class="pill pill-green">✓ Verified</span></td><td>Auto-detected on Debian 13</td></tr>
-                        <tr><td>Onion address generation</td><td><span class="pill pill-green">✓ Verified</span></td><td>V3 address generated within 60s</td></tr>
-                        <tr><td>tmpfs RAM logging</td><td><span class="pill pill-green">✓ Verified</span></td><td>/var/log/tor mounted as tmpfs</td></tr>
-                        <tr><td>NFTables firewall</td><td><span class="pill pill-green">✓ Verified</span></td><td>Balanced ruleset, Tor unrestricted</td></tr>
-                        <tr><td>neural-sentry.service</td><td><span class="pill pill-green">✓ Valid</span></td><td>Deploys if neural_sentry.py present</td></tr>
-                        <tr><td>privacy-monitor.timer</td><td><span class="pill pill-green">✓ Valid</span></td><td>10-minute interval, 2min boot delay</td></tr>
-                        <tr><td>traffic-protection.service</td><td><span class="pill pill-green">✓ Valid</span></td><td>RemainAfterExit, starts after nftables</td></tr>
-                        <tr><td>uninstall.sh</td><td><span class="pill pill-green">✓ Valid</span></td><td>Removes all systemd units</td></tr>
-                    </tbody>
-                </table>
+                <div class="verif-list">
+                    <div class="verif-row"><div class="verif-name"><code class="inline">install.sh</code></div><span class="pill pill-green">✓ Valid</span><div class="verif-note">bash -n syntax clean, all 6 bugs fixed</div></div>
+                    <div class="verif-row"><div class="verif-name">nginx + ModSecurity WAF</div><span class="pill pill-green">✓ Verified</span><div class="verif-note">Blocking mode, unicode.mapping resolved</div></div>
+                    <div class="verif-row"><div class="verif-name"><code class="inline">tor@default.service</code></div><span class="pill pill-green">✓ Verified</span><div class="verif-note">Auto-detected on Debian 13</div></div>
+                    <div class="verif-row"><div class="verif-name">Onion address generation</div><span class="pill pill-green">✓ Verified</span><div class="verif-note">V3 address generated within 60s</div></div>
+                    <div class="verif-row"><div class="verif-name">tmpfs RAM logging</div><span class="pill pill-green">✓ Verified</span><div class="verif-note">/var/log/tor mounted as tmpfs</div></div>
+                    <div class="verif-row"><div class="verif-name">NFTables firewall</div><span class="pill pill-green">✓ Verified</span><div class="verif-note">Balanced ruleset, Tor unrestricted</div></div>
+                    <div class="verif-row"><div class="verif-name"><code class="inline">neural-sentry.service</code></div><span class="pill pill-green">✓ Valid</span><div class="verif-note">Deploys if neural_sentry.py present</div></div>
+                    <div class="verif-row"><div class="verif-name"><code class="inline">privacy-monitor.timer</code></div><span class="pill pill-green">✓ Valid</span><div class="verif-note">10-minute interval, 2min boot delay</div></div>
+                    <div class="verif-row"><div class="verif-name"><code class="inline">traffic-protection.service</code></div><span class="pill pill-green">✓ Valid</span><div class="verif-note">RemainAfterExit, after nftables</div></div>
+                    <div class="verif-row"><div class="verif-name"><code class="inline">uninstall.sh</code></div><span class="pill pill-green">✓ Valid</span><div class="verif-note">Removes all systemd units</div></div>
+                </div>
             </section>
 
             <!-- Footer -->
@@ -1135,18 +1314,34 @@ sleep 15 && sudo cat /var/lib/tor/hidden_service/hostname</pre>
         function toggleSidebar() {
             const sb = document.getElementById('sidebar');
             const icon = document.getElementById('sidebar-icon');
+            const backdrop = document.getElementById('sidebar-backdrop');
             const open = sb.classList.toggle('open');
             icon.className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+            backdrop.classList.toggle('visible', open);
+            document.body.style.overflow = open ? 'hidden' : '';
         }
 
         // Close sidebar on link click (mobile)
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.addEventListener('click', () => {
                 if (window.innerWidth <= 900) {
-                    document.getElementById('sidebar').classList.remove('open');
-                    document.getElementById('sidebar-icon').className = 'fa-solid fa-bars';
+                    const sb = document.getElementById('sidebar');
+                    const icon = document.getElementById('sidebar-icon');
+                    const backdrop = document.getElementById('sidebar-backdrop');
+                    sb.classList.remove('open');
+                    icon.className = 'fa-solid fa-bars';
+                    backdrop.classList.remove('visible');
+                    document.body.style.overflow = '';
                 }
             });
+        });
+
+        // Close on ESC key
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                const sb = document.getElementById('sidebar');
+                if (sb.classList.contains('open')) toggleSidebar();
+            }
         });
 
         // ── Active sidebar link on scroll ──
