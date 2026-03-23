@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#020203">
+    <title>OnionSite-Aegis | Documentation v10.0</title>
+    <meta name="description" content="Full documentation for OnionSite-Aegis v10.0 — setup, anti-tracking, improvements, verification, and maintenance.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { dark:'#020203', card:'#0A0A0C', green:'#00F0FF', purple:'#7000FF', success:'#00DC82', danger:'#FF4E4E', warning:'#FFB800' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand-dark:#020203; --brand-green:#00F0FF; --brand-purple:#7000FF;
+            --brand-success:#00DC82; --brand-danger:#FF4E4E; --brand-warning:#FFB800;
+            --sidebar-w: 280px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { width:100%; overflow-x:hidden; }
+        body {
+            background-color:var(--brand-dark);
+            color:#e4e4e7;
+            font-family:'Inter',system-ui,sans-serif;
+            min-height:100vh;
+        }
+
+        /* Grid bg */
+        body::before {
+            content:'';
+            position:fixed; inset:0; z-index:-1;
+            background-image:
+                linear-gradient(rgba(0,240,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,240,255,.025) 1px, transparent 1px);
+            background-size:40px 40px;
+        }
+        body::after {
+            content:'';
+            position:fixed; inset:0; z-index:-1;
+            background:
+                radial-gradient(circle at 15% 25%, rgba(0,240,255,.05) 0%, transparent 45%),
+                radial-gradient(circle at 85% 75%, rgba(112,0,255,.05) 0%, transparent 45%);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:#020203; }
+        ::-webkit-scrollbar-thumb { background:linear-gradient(135deg,rgba(0,240,255,.5),rgba(112,0,255,.5)); border-radius:3px; }
+        * { scrollbar-width:thin; scrollbar-color:rgba(0,240,255,.4) #020203; }
+
+        /* Layout */
+        .docs-layout { display:flex; min-height:100vh; padding-top:72px; }
+
+        /* Sidebar */
+        .sidebar {
+            width:var(--sidebar-w);
+            position:fixed;
+            top:72px; left:0; bottom:0;
+            overflow-y:auto;
+            background:rgba(10,10,12,.95);
+            border-right:1px solid rgba(255,255,255,.06);
+            padding:24px 0 40px;
+            z-index:40;
+            transition:transform .3s cubic-bezier(.4,0,.2,1);
+        }
+        .sidebar-section { margin-bottom:28px; padding:0 16px; }
+        .sidebar-label {
+            font-size:.65rem; font-family:'JetBrains Mono',monospace;
+            letter-spacing:.2em; text-transform:uppercase;
+            color:rgba(255,255,255,.3); margin-bottom:8px;
+            padding:0 8px;
+        }
+        .sidebar-link {
+            display:flex; align-items:center; gap:8px;
+            padding:8px 12px; border-radius:8px;
+            font-size:.83rem; color:rgba(255,255,255,.55);
+            text-decoration:none;
+            transition:all .2s;
+            border-left:2px solid transparent;
+            margin-bottom:2px;
+        }
+        .sidebar-link:hover { color:#fff; background:rgba(255,255,255,.05); border-left-color:rgba(0,240,255,.4); }
+        .sidebar-link.active { color:var(--brand-green); background:rgba(0,240,255,.06); border-left-color:var(--brand-green); }
+        .sidebar-link i { width:14px; text-align:center; font-size:.75rem; }
+
+        /* Main content */
+        .docs-content {
+            margin-left:var(--sidebar-w);
+            flex:1;
+            padding:48px 48px 80px;
+            max-width:900px;
+        }
+
+        /* Sections */
+        .doc-section { margin-bottom:80px; scroll-margin-top:100px; }
+        .doc-section:last-child { margin-bottom:0; }
+
+        /* Section header */
+        .section-badge {
+            display:inline-flex; align-items:center; gap:8px;
+            font-size:.68rem; font-family:'JetBrains Mono',monospace;
+            letter-spacing:.15em; text-transform:uppercase;
+            padding:4px 12px; border-radius:100px;
+            margin-bottom:12px;
+            border:1px solid;
+        }
+        .section-h2 {
+            font-size:2rem; font-weight:800; color:#fff;
+            margin-bottom:10px; line-height:1.2;
+        }
+        .section-lead { color:rgba(255,255,255,.5); font-size:.95rem; line-height:1.7; margin-bottom:32px; }
+
+        /* Cards */
+        .doc-card {
+            background:rgba(14,14,18,.7);
+            border:1px solid rgba(255,255,255,.07);
+            border-radius:14px;
+            padding:28px;
+            margin-bottom:20px;
+            backdrop-filter:blur(8px);
+            transition:border-color .2s;
+        }
+        .doc-card:hover { border-color:rgba(0,240,255,.2); }
+        .doc-card h3 { font-size:1rem; font-weight:700; color:#fff; margin-bottom:10px; }
+        .doc-card p, .doc-card li { font-size:.875rem; color:rgba(255,255,255,.55); line-height:1.75; }
+        .doc-card ul { list-style:none; space-y:4px; }
+        .doc-card ul li { display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; }
+        .doc-card ul li i { margin-top:3px; font-size:.7rem; flex-shrink:0; }
+
+        /* Code blocks */
+        .code-block {
+            background:#060608;
+            border:1px solid rgba(255,255,255,.08);
+            border-radius:10px;
+            overflow:hidden;
+            margin:16px 0;
+            font-family:'JetBrains Mono',monospace;
+        }
+        .code-header {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:8px 16px;
+            background:rgba(255,255,255,.04);
+            border-bottom:1px solid rgba(255,255,255,.06);
+        }
+        .code-header span { font-size:.72rem; color:rgba(255,255,255,.3); letter-spacing:.05em; }
+        .code-copy-btn {
+            background:rgba(255,255,255,.08); border:none; color:rgba(255,255,255,.5);
+            padding:3px 10px; border-radius:5px; font-size:.72rem;
+            cursor:pointer; transition:all .2s; font-family:inherit;
+        }
+        .code-copy-btn:hover { background:rgba(0,240,255,.15); color:var(--brand-green); }
+        .code-block pre {
+            padding:18px 20px; overflow-x:auto;
+            font-size:.82rem; line-height:1.75;
+            color:rgba(255,255,255,.75);
+        }
+        code.inline {
+            font-family:'JetBrains Mono',monospace;
+            font-size:.8em;
+            background:rgba(255,255,255,.07);
+            color:var(--brand-green);
+            padding:2px 7px; border-radius:4px;
+        }
+
+        /* Tables */
+        .doc-table { width:100%; border-collapse:collapse; margin:16px 0; font-size:.83rem; }
+        .doc-table th { text-align:left; padding:10px 14px; background:rgba(255,255,255,.05); color:rgba(255,255,255,.7); font-weight:600; border-bottom:1px solid rgba(255,255,255,.08); }
+        .doc-table td { padding:10px 14px; border-bottom:1px solid rgba(255,255,255,.04); color:rgba(255,255,255,.55); }
+        .doc-table tr:last-child td { border-bottom:none; }
+        .doc-table tr:hover td { background:rgba(255,255,255,.02); }
+
+        /* Status pills */
+        .pill { display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:100px; font-size:.72rem; font-family:'JetBrains Mono',monospace; font-weight:600; }
+        .pill-green { background:rgba(0,220,130,.12); color:var(--brand-success); }
+        .pill-red { background:rgba(255,78,78,.12); color:var(--brand-danger); }
+        .pill-yellow { background:rgba(255,184,0,.12); color:var(--brand-warning); }
+        .pill-cyan { background:rgba(0,240,255,.1); color:var(--brand-green); }
+
+        /* Alert boxes */
+        .alert { padding:14px 18px; border-radius:10px; font-size:.855rem; line-height:1.65; margin:16px 0; display:flex; gap:12px; align-items:flex-start; }
+        .alert i { margin-top:2px; flex-shrink:0; }
+        .alert-warn { background:rgba(255,184,0,.08); border:1px solid rgba(255,184,0,.2); color:rgba(255,184,0,.9); }
+        .alert-danger { background:rgba(255,78,78,.08); border:1px solid rgba(255,78,78,.2); color:rgba(255,78,78,.9); }
+        .alert-info { background:rgba(0,240,255,.07); border:1px solid rgba(0,240,255,.2); color:rgba(0,240,255,.9); }
+        .alert-success { background:rgba(0,220,130,.07); border:1px solid rgba(0,220,130,.2); color:rgba(0,220,130,.9); }
+
+        /* Steps */
+        .steps { counter-reset:step; }
+        .step { display:flex; gap:20px; margin-bottom:24px; }
+        .step-num {
+            counter-increment:step;
+            width:32px; height:32px; border-radius:50%;
+            background:rgba(0,240,255,.1); border:1px solid rgba(0,240,255,.3);
+            color:var(--brand-green); font-weight:700; font-size:.8rem;
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0; margin-top:2px;
+        }
+        .step-num::before { content:counter(step); }
+        .step-body h4 { color:#fff; font-size:.9rem; font-weight:700; margin-bottom:6px; }
+        .step-body p { color:rgba(255,255,255,.5); font-size:.855rem; line-height:1.7; }
+
+        /* File table */
+        .file-row { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; border-radius:8px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.05); margin-bottom:5px; font-size:.82rem; }
+        .file-row:hover { background:rgba(255,255,255,.055); }
+        .file-name { font-family:'JetBrains Mono',monospace; color:var(--brand-green); }
+        .file-desc { color:rgba(255,255,255,.45); font-size:.78rem; }
+
+        /* Threat matrix */
+        .matrix-row { display:grid; grid-template-columns:1fr 1fr auto; gap:16px; align-items:center; padding:10px 14px; border-radius:8px; background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.05); margin-bottom:5px; font-size:.82rem; }
+
+        /* Top nav */
+        .top-nav {
+            position:fixed; top:0; left:0; right:0; height:72px; z-index:100;
+            background:rgba(2,2,3,.92); backdrop-filter:blur(16px);
+            border-bottom:1px solid rgba(255,255,255,.06);
+            display:flex; align-items:center;
+            padding:0 24px; gap:16px;
+        }
+        .nav-brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .nav-title { font-size:1rem; font-weight:800; color:#fff; }
+        .nav-sub { font-size:.7rem; color:rgba(255,255,255,.35); font-family:'JetBrains Mono',monospace; }
+        .nav-back {
+            display:flex; align-items:center; gap:6px;
+            text-decoration:none; font-size:.82rem; color:rgba(255,255,255,.5);
+            padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,.1);
+            transition:all .2s; margin-left:auto;
+        }
+        .nav-back:hover { color:#fff; border-color:rgba(0,240,255,.4); background:rgba(0,240,255,.06); }
+        .nav-github {
+            display:flex; align-items:center; gap:6px;
+            text-decoration:none; font-size:.82rem; color:rgba(255,255,255,.6);
+            padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,.1);
+            transition:all .2s;
+        }
+        .nav-github:hover { color:#fff; border-color:rgba(255,255,255,.3); }
+        .nav-sep { color:rgba(255,255,255,.12); font-size:.9rem; }
+
+        /* Mobile sidebar toggle */
+        .sidebar-toggle {
+            display:none; position:fixed; bottom:24px; left:24px; z-index:200;
+            width:48px; height:48px; border-radius:50%;
+            background:var(--brand-green); color:#000; border:none;
+            font-size:1.1rem; cursor:pointer; box-shadow:0 4px 20px rgba(0,240,255,.4);
+        }
+
+        /* Dividers */
+        .doc-divider { height:1px; background:rgba(255,255,255,.06); margin:32px 0; }
+
+        /* Version badge */
+        .v-badge { display:inline-flex; align-items:center; gap:6px; font-size:.72rem; font-family:'JetBrains Mono',monospace; padding:3px 10px; border-radius:100px; background:rgba(0,240,255,.08); border:1px solid rgba(0,240,255,.2); color:var(--brand-green); }
+
+        /* Progress/checklist */
+        .checklist li { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; font-size:.875rem; color:rgba(255,255,255,.55); line-height:1.6; }
+        .checklist li i { margin-top:3px; flex-shrink:0; }
+
+        @media(max-width:900px) {
+            .sidebar { transform:translateX(-100%); }
+            .sidebar.open { transform:translateX(0); }
+            .docs-content { margin-left:0; padding:32px 20px 60px; }
+            .sidebar-toggle { display:flex; align-items:center; justify-content:center; }
+            .section-h2 { font-size:1.5rem; }
+        }
+        @media(max-width:600px) {
+            .docs-content { padding:24px 16px 60px; }
+            .doc-card { padding:20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Nav -->
+    <nav class="top-nav">
+        <a class="nav-brand" href="index.html">
+            <div style="width:36px;height:36px;background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.25);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <i class="fa-solid fa-shield-halved" style="color:var(--brand-green);font-size:1rem;"></i>
+            </div>
+            <div>
+                <div class="nav-title">OnionSite-Aegis</div>
+                <div class="nav-sub">v10.0 DOCUMENTATION</div>
+            </div>
+        </a>
+        <span class="nav-sep">|</span>
+        <span style="font-size:.78rem;color:rgba(255,255,255,.3);font-family:'JetBrains Mono',monospace;">Bare Metal Edition</span>
+
+        <a href="https://github.com/ashardian/OnionSite-Aegis" target="_blank" rel="noopener noreferrer" class="nav-github">
+            <i class="fab fa-github"></i> GitHub
+        </a>
+        <a href="index.html" class="nav-back">
+            <i class="fa-solid fa-arrow-left"></i> Main Page
+        </a>
+    </nav>
+
+    <div class="docs-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar" aria-label="Documentation navigation">
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Getting Started</div>
+                <a href="#quickstart" class="sidebar-link active"><i class="fa-solid fa-bolt"></i> Quick Start</a>
+                <a href="#requirements" class="sidebar-link"><i class="fa-solid fa-server"></i> Requirements</a>
+                <a href="#installation" class="sidebar-link"><i class="fa-solid fa-terminal"></i> Installation</a>
+                <a href="#postinstall" class="sidebar-link"><i class="fa-solid fa-check-double"></i> Post-Installation</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Security Modules</div>
+                <a href="#neural-sentry" class="sidebar-link"><i class="fa-solid fa-brain"></i> Neural Sentry</a>
+                <a href="#waf" class="sidebar-link"><i class="fa-solid fa-shield-virus"></i> ModSecurity WAF</a>
+                <a href="#firewall" class="sidebar-link"><i class="fa-solid fa-fire"></i> NFTables Firewall</a>
+                <a href="#anti-forensics" class="sidebar-link"><i class="fa-solid fa-eraser"></i> Anti-Forensics</a>
+                <a href="#anti-tracking" class="sidebar-link"><i class="fa-solid fa-user-secret"></i> Anti-Tracking</a>
+                <a href="#privacy-monitor" class="sidebar-link"><i class="fa-solid fa-eye"></i> Privacy Monitor</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Maintenance</div>
+                <a href="#maintenance" class="sidebar-link"><i class="fa-solid fa-screwdriver-wrench"></i> Commands</a>
+                <a href="#troubleshooting" class="sidebar-link"><i class="fa-solid fa-bug"></i> Troubleshooting</a>
+                <a href="#file-locations" class="sidebar-link"><i class="fa-solid fa-folder-open"></i> File Locations</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Reference</div>
+                <a href="#improvements" class="sidebar-link"><i class="fa-solid fa-code-compare"></i> Changelog</a>
+                <a href="#threat-model" class="sidebar-link"><i class="fa-solid fa-crosshairs"></i> Threat Model</a>
+                <a href="#verification" class="sidebar-link"><i class="fa-solid fa-circle-check"></i> Verification</a>
+            </div>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-content" id="main-content">
+
+            <!-- ── QUICK START ── -->
+            <section class="doc-section" id="quickstart">
+                <div class="section-badge" style="background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.25);color:var(--brand-green);">
+                    <i class="fa-solid fa-bolt"></i> Quick Start
+                </div>
+                <h2 class="section-h2">Get Running in Minutes</h2>
+                <p class="section-lead">One command. Interactive feature selection. Onion address generated in under 90 seconds on a clean Debian 13 system.</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>bash — install</span>
+                        <button class="code-copy-btn" onclick="copyCode(this, 'git clone https://github.com/ashardian/OnionSite-Aegis.git\ncd OnionSite-Aegis\nchmod +x install.sh\nsudo ./install.sh')"><i class="fa-regular fa-copy"></i> Copy</button>
+                    </div>
+                    <pre><span style="color:var(--brand-green)">$</span> git clone https://github.com/ashardian/OnionSite-Aegis.git
+<span style="color:var(--brand-green)">$</span> cd OnionSite-Aegis
+<span style="color:var(--brand-green)">$</span> chmod +x install.sh
+<span style="color:var(--brand-green)">$</span> sudo ./install.sh</pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — get onion address</span></div>
+                    <pre><span style="color:var(--brand-green)">$</span> sudo cat /var/lib/tor/hidden_service/hostname</pre>
+                </div>
+
+                <div class="alert alert-warn">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div><strong>Cloud VPS users:</strong> When the installer asks "Allow SSH Access? [y/N]" — answer <code class="inline">y</code>. If you answer no, nftables will drop all inbound connections including your SSH session and you will be locked out.</div>
+                </div>
+
+                <div class="alert alert-danger">
+                    <i class="fa-solid fa-key"></i>
+                    <div><strong>Back up your keys immediately after install.</strong> Losing <code class="inline">/var/lib/tor/hidden_service/</code> means losing your onion address permanently — there is no recovery. Run <code class="inline">sudo ./SAVE_MY_ONION.sh</code> now.</div>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── REQUIREMENTS ── -->
+            <section class="doc-section" id="requirements">
+                <div class="section-badge" style="background:rgba(112,0,255,.08);border-color:rgba(112,0,255,.25);color:#a855f7;">
+                    <i class="fa-solid fa-server"></i> Requirements
+                </div>
+                <h2 class="section-h2">System Requirements</h2>
+                <p class="section-lead">Aegis v10.0 is a bare-metal-only tool. Docker support was permanently removed because it conflicts with kernel-level sysctl hardening, NFTables management, Tor Sandbox mode, and tmpfs RAM logging.</p>
+
+                <table class="doc-table">
+                    <thead><tr><th>Component</th><th>Requirement</th><th>Notes</th></tr></thead>
+                    <tbody>
+                        <tr><td>Operating System</td><td><span class="pill pill-green">Debian 13 Trixie</span></td><td>Also Kali Linux, Parrot OS, Debian 11+</td></tr>
+                        <tr><td>Privileges</td><td><span class="pill pill-red">root required</span></td><td>Modifies kernel, systemd, firewall</td></tr>
+                        <tr><td>Disk space</td><td>500MB minimum</td><td>Logs stay in RAM — disk mainly for packages</td></tr>
+                        <tr><td>RAM</td><td>512MB+</td><td>10MB reserved for tmpfs log disk</td></tr>
+                        <tr><td>Network</td><td>Internet access</td><td>WAF config + unicode.mapping downloaded from GitHub</td></tr>
+                        <tr><td>Tor service unit</td><td><code class="inline">tor@default</code></td><td>Auto-detected on Debian 13. Classic <code class="inline">tor</code> also supported.</td></tr>
+                        <tr><td>Deployment type</td><td>Dedicated machine or VM</td><td>Do not share host with other services</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — verify your system</span></div>
+                    <pre>cat /etc/os-release    <span style="color:rgba(255,255,255,.3)"># Check distro</span>
+df -h /               <span style="color:rgba(255,255,255,.3)"># Check disk space</span>
+free -h               <span style="color:rgba(255,255,255,.3)"># Check RAM</span>
+whoami                <span style="color:rgba(255,255,255,.3)"># Must be root or sudo capable</span></pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── INSTALLATION ── -->
+            <section class="doc-section" id="installation">
+                <div class="section-badge" style="background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.25);color:var(--brand-green);">
+                    <i class="fa-solid fa-terminal"></i> Installation
+                </div>
+                <h2 class="section-h2">Full Installation Guide</h2>
+                <p class="section-lead">The Architect Installer is fully interactive. Every feature can be toggled independently. Here is what happens at each step.</p>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num"></div>
+                        <div class="step-body">
+                            <h4>Download the repository</h4>
+                            <p>Clone from GitHub or unzip the release archive into any directory.</p>
+                            <div class="code-block" style="margin-top:10px;">
+                                <div class="code-header"><span>bash</span></div>
+                                <pre>git clone https://github.com/ashardian/OnionSite-Aegis.git && cd OnionSite-Aegis</pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num"></div>
+                        <div class="step-body">
+                            <h4>Run the installer as root</h4>
+                            <p>The installer will auto-detect your Tor service unit (<code class="inline">tor</code> or <code class="inline">tor@default</code>) and your system's nginx module paths before doing anything.</p>
+                            <div class="code-block" style="margin-top:10px;">
+                                <div class="code-header"><span>bash</span></div>
+                                <pre>chmod +x install.sh && sudo ./install.sh</pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num"></div>
+                        <div class="step-body">
+                            <h4>Answer the interactive prompts</h4>
+                            <p>Press Enter to accept the default (Yes) for each module, or type <code class="inline">n</code> to disable. All defaults are production-recommended.</p>
+                            <table class="doc-table" style="margin-top:10px;">
+                                <thead><tr><th>Prompt</th><th>Default</th><th>When to disable</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ModSecurity WAF</td><td><span class="pill pill-green">Y</span></td><td>Very low RAM (&lt;256MB)</td></tr>
+                                    <tr><td>Lua Response Padding</td><td><span class="pill pill-green">Y</span></td><td>Rarely — always recommended</td></tr>
+                                    <tr><td>Neural Sentry IPS</td><td><span class="pill pill-green">Y</span></td><td>If Python is unavailable</td></tr>
+                                    <tr><td>Privacy Monitor</td><td><span class="pill pill-green">Y</span></td><td>Never — leave this on</td></tr>
+                                    <tr><td>Traffic Analysis Protection</td><td><span class="pill pill-green">Y</span></td><td>Never — leave this on</td></tr>
+                                    <tr><td>SSH Access</td><td><span class="pill pill-red">N</span></td><td>Enable only on Cloud VPS</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num"></div>
+                        <div class="step-body">
+                            <h4>Identity wipe decision</h4>
+                            <p>If a previous hidden service exists, the installer prompts you to type <code class="inline">wipe</code> for a new address or press Enter to preserve the existing one.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num"></div>
+                        <div class="step-body">
+                            <h4>Wait for onion address generation</h4>
+                            <p>The installer waits up to 60 seconds for Tor to generate <code class="inline">/var/lib/tor/hidden_service/hostname</code>. Your address is printed on success.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="color:#fff;font-size:1rem;font-weight:700;margin:24px 0 12px;">What the installer does internally</h3>
+                <div class="doc-card">
+                    <ul>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Sanitize</strong> — Stops all services, removes all Nginx configs, moves old module symlinks to a backup dir, optionally wipes hidden service keys.</span></li>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Dependencies</strong> — Installs tor, nginx, nftables, python3-stem, python3-inotify, libmodsecurity3, libnginx-mod-http-modsecurity, libnginx-mod-http-lua via apt.</span></li>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">RAM Logging</strong> — Mounts a 10MB tmpfs at <code class="inline">/var/log/tor</code> with mode 0700, owned by debian-tor. No logs ever touch disk.</span></li>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Tor hardening</strong> — Writes a hardened <code class="inline">/etc/tor/torrc</code> with SafeLogging, AvoidDiskWrites, V3 hidden service, cookie auth on control port.</span></li>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Nginx architecture</strong> — Links modules in correct load order (NDK → Lua → WAF), builds site config with WAF and Lua directives, downloads unicode.mapping, rewrites SecUnicodeMapFile to absolute path, validates with <code class="inline">nginx -t</code> before firewall applies.</span></li>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Firewall</strong> — Deploys balanced NFTables ruleset, optionally uncomments SSH rule, validates with <code class="inline">nft -c</code> before applying.</span></li>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Services</strong> — Deploys neural-sentry.service, privacy-monitor.timer, traffic-protection.service as systemd units with correct dependencies.</span></li>
+                        <li><i class="fa-solid fa-angle-right" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Bootstrap</strong> — Restarts Tor and nginx, waits for onion address, prints result.</span></li>
+                    </ul>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── POST-INSTALL ── -->
+            <section class="doc-section" id="postinstall">
+                <div class="section-badge" style="background:rgba(0,220,130,.08);border-color:rgba(0,220,130,.25);color:var(--brand-success);">
+                    <i class="fa-solid fa-check-double"></i> Post-Installation
+                </div>
+                <h2 class="section-h2">After the Install Completes</h2>
+                <p class="section-lead">Verify services, add your content, and back up your keys.</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — verify all services</span></div>
+                    <pre>sudo systemctl status tor@default    <span style="color:rgba(255,255,255,.3)"># Real Tor process on Debian 13</span>
+sudo systemctl status nginx
+sudo systemctl status neural-sentry
+sudo systemctl status privacy-monitor.timer
+sudo systemctl status traffic-protection.service
+
+sudo mount | grep tmpfs | grep tor   <span style="color:rgba(255,255,255,.3)"># Confirm RAM logging active</span>
+sudo ls -la /var/lib/tor/hidden_service/  <span style="color:rgba(255,255,255,.3)"># Keys + hostname</span>
+sudo nginx -t                         <span style="color:rgba(255,255,255,.3)"># Confirm WAF config OK</span></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — add your website content</span></div>
+                    <pre>sudo aegis-edit                      <span style="color:rgba(255,255,255,.3)"># Built-in nano editor + auto-reload</span>
+
+<span style="color:rgba(255,255,255,.3)"># Or copy a full site manually:</span>
+sudo cp -r /path/to/your/site/* /var/www/onion_site/
+sudo chown -R www-data:www-data /var/www/onion_site
+sudo systemctl reload nginx</pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — backup keys (do this now)</span></div>
+                    <pre>sudo ./SAVE_MY_ONION.sh              <span style="color:rgba(255,255,255,.3)"># Built-in backup tool</span>
+
+<span style="color:rgba(255,255,255,.3)"># Manual alternative:</span>
+sudo tar -czf onion-backup-$(date +%Y%m%d).tar.gz /var/lib/tor/hidden_service/</pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── NEURAL SENTRY ── -->
+            <section class="doc-section" id="neural-sentry">
+                <div class="section-badge" style="background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.25);color:var(--brand-green);">
+                    <i class="fa-solid fa-brain"></i> Neural Sentry
+                </div>
+                <h2 class="section-h2">Neural Sentry IPS</h2>
+                <p class="section-lead">An active-defense Python daemon that monitors your Tor control port in real time and kills circuits the moment an attack signature is detected.</p>
+
+                <div class="doc-card">
+                    <h3>How it works</h3>
+                    <ul>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>Connects to the Tor control port at <code class="inline">127.0.0.1:9051</code> using cookie authentication via <code class="inline">python3-stem</code>.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>Monitors the rate of new circuit creation. A sudden spike is the primary signature of a DDoS or circuit-flooding attack.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>On detection, sends a <code class="inline">NEWNYM</code> signal — forcing Tor to rotate all circuits and sever the attacker's connection path instantly.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>Uses <code class="inline">python3-inotify</code> for file integrity monitoring — any unexpected change to the web root or config files triggers an alert.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>All sentry events logged to <code class="inline">/var/log/tor/sentry.log</code> — inside the RAM disk, wiped on reboot.</span></li>
+                    </ul>
+                </div>
+
+                <table class="doc-table">
+                    <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+                    <tbody>
+                        <tr><td>Systemd unit</td><td><code class="inline">neural-sentry.service</code></td></tr>
+                        <tr><td>Control interface</td><td><code class="inline">127.0.0.1:9051</code></td></tr>
+                        <tr><td>Auth method</td><td>Cookie (<code class="inline">CookieAuthentication 1</code>)</td></tr>
+                        <tr><td>Log file</td><td><code class="inline">/var/log/tor/sentry.log</code> (RAM)</td></tr>
+                        <tr><td>Restart policy</td><td><code class="inline">always</code></td></tr>
+                        <tr><td>Runs as</td><td><code class="inline">root</code></td></tr>
+                    </tbody>
+                </table>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — manage neural sentry</span></div>
+                    <pre>sudo systemctl status neural-sentry
+sudo journalctl -u neural-sentry -f
+sudo tail -f /var/log/tor/sentry.log</pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── WAF ── -->
+            <section class="doc-section" id="waf">
+                <div class="section-badge" style="background:rgba(255,184,0,.08);border-color:rgba(255,184,0,.25);color:var(--brand-warning);">
+                    <i class="fa-solid fa-shield-virus"></i> ModSecurity WAF
+                </div>
+                <h2 class="section-h2">ModSecurity Web Application Firewall</h2>
+                <p class="section-lead">Full ModSecurity v3 integrated into nginx. Blocks SQLi, XSS, shell uploads, and other application-layer attacks before they reach Tor.</p>
+
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div><strong>unicode.mapping fix:</strong> <code class="inline">modsecurity.conf-recommended</code> references <code class="inline">unicode.mapping</code> via a relative path. Aegis downloads it automatically and rewrites <code class="inline">SecUnicodeMapFile</code> to an absolute path — fixing the nginx startup crash that affected older installs.</div>
+                </div>
+
+                <div class="doc-card">
+                    <h3>Installation details</h3>
+                    <ul>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-warning)"></i><span>Package: <code class="inline">libnginx-mod-http-modsecurity</code> + <code class="inline">libmodsecurity3</code></span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-warning)"></i><span>Config downloaded from <code class="inline">SpiderLabs/ModSecurity</code> GitHub (v3 master branch)</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-warning)"></i><span><code class="inline">unicode.mapping</code> downloaded to <code class="inline">/etc/nginx/modsec/</code> alongside the conf</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-warning)"></i><span><code class="inline">SecRuleEngine DetectionOnly</code> rewritten to <code class="inline">SecRuleEngine On</code> (blocking mode)</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-warning)"></i><span>Main rules file: <code class="inline">/etc/nginx/modsec/main.conf</code> → includes <code class="inline">modsecurity.conf</code></span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-warning)"></i><span>Nginx site config includes <code class="inline">modsecurity on</code> and <code class="inline">modsecurity_rules_file</code> directives</span></li>
+                    </ul>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — verify WAF</span></div>
+                    <pre>nginx -t                             <span style="color:rgba(255,255,255,.3)"># Config test — must pass</span>
+ls /etc/nginx/modsec/               <span style="color:rgba(255,255,255,.3)"># Should show modsecurity.conf + unicode.mapping</span>
+grep "SecRuleEngine" /etc/nginx/modsec/modsecurity.conf  <span style="color:rgba(255,255,255,.3)"># Should say "On"</span></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — if unicode.mapping is missing (older installs)</span></div>
+                    <pre>sudo wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/unicode.mapping \
+    -O /etc/nginx/modsec/unicode.mapping
+sudo sed -i "s|SecUnicodeMapFile unicode.mapping|SecUnicodeMapFile /etc/nginx/modsec/unicode.mapping|g" \
+    /etc/nginx/modsec/modsecurity.conf
+sudo nginx -t && sudo systemctl reload nginx</pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── FIREWALL ── -->
+            <section class="doc-section" id="firewall">
+                <div class="section-badge" style="background:rgba(112,0,255,.08);border-color:rgba(112,0,255,.25);color:#a855f7;">
+                    <i class="fa-solid fa-fire"></i> NFTables Firewall
+                </div>
+                <h2 class="section-h2">Balanced NFTables Firewall</h2>
+                <p class="section-lead">Previous versions used aggressive rate limiting that blocked Tor's own directory fetches, causing "Onion Site Not Found" on first launch. v10.0 uses stateful tracking — Tor sees everything it needs, attackers see nothing.</p>
+
+                <div class="doc-card">
+                    <h3>Ruleset logic</h3>
+                    <ul>
+                        <li><i class="fa-solid fa-check" style="color:#a855f7"></i><span><strong style="color:#fff;">Loopback always accepted</strong> — nginx and Tor communicate over localhost. This chain must never be blocked.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:#a855f7"></i><span><strong style="color:#fff;">ct state established,related accept</strong> — Replies to Tor's outbound connections are always allowed. This is what broke in old versions.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:#a855f7"></i><span><strong style="color:#fff;">ct state invalid drop</strong> — Malformed packets dropped before they consume resources.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:#a855f7"></i><span><strong style="color:#fff;">ICMP rate limited</strong> — 5 packets/second. Ping works but ICMP flood does not.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:#a855f7"></i><span><strong style="color:#fff;">Default: DROP</strong> — All unsolicited inbound connections dropped. Port scanners see nothing.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:#a855f7"></i><span><strong style="color:#fff;">Forward: DROP</strong> — The server cannot be used as a router or relay.</span></li>
+                        <li><i class="fa-solid fa-check" style="color:#a855f7"></i><span><strong style="color:#fff;">Output: ACCEPT</strong> — Tor needs unrestricted outbound to reach the network.</span></li>
+                    </ul>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>nftables — current ruleset structure</span></div>
+                    <pre><span style="color:rgba(255,255,255,.4)">table inet filter {</span>
+    chain input {
+        <span style="color:var(--brand-warning)">type filter hook input priority 0; policy drop;</span>
+        iifname "lo" accept                           <span style="color:rgba(255,255,255,.3)"># loopback</span>
+        ct state established,related accept           <span style="color:rgba(255,255,255,.3)"># Tor replies</span>
+        ct state invalid drop                         <span style="color:rgba(255,255,255,.3)"># malformed</span>
+        ip protocol icmp ... limit rate 5/second accept
+        <span style="color:rgba(255,255,255,.3)"># tcp dport 22 accept  ← SSH Safety Valve (disabled by default)</span>
+        log prefix "FIREWALL-DROP: " drop
+    }
+    chain forward { <span style="color:var(--brand-danger)">policy drop;</span> }
+    chain output  { <span style="color:var(--brand-success)">policy accept;</span> }
+<span style="color:rgba(255,255,255,.4)">}</span></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — inspect live rules</span></div>
+                    <pre>sudo nft list ruleset
+sudo nft list table inet filter
+sudo journalctl -k | grep "FIREWALL-DROP"  <span style="color:rgba(255,255,255,.3)"># See what's being dropped</span></pre>
+                </div>
+
+                <div class="alert alert-warn">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div><strong>Emergency firewall reset</strong> — if you are locked out on a VPS, use your provider's web console and run <code class="inline">sudo nft flush ruleset</code>, then re-run the installer with SSH enabled.</div>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── ANTI-FORENSICS ── -->
+            <section class="doc-section" id="anti-forensics">
+                <div class="section-badge" style="background:rgba(255,78,78,.08);border-color:rgba(255,78,78,.25);color:var(--brand-danger);">
+                    <i class="fa-solid fa-eraser"></i> Anti-Forensics
+                </div>
+                <h2 class="section-h2">Amnesic Logging Architecture</h2>
+                <p class="section-lead">Every log is stored in volatile RAM. Power loss or reboot is a full forensic wipe. No persistent evidence of traffic ever exists on disk.</p>
+
+                <div class="doc-card">
+                    <h3>RAM disk setup</h3>
+                    <ul>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-danger)"></i><span><code class="inline">/var/log/tor</code> mounted as <code class="inline">tmpfs</code> — 10MB, mode 0700, owned by <code class="inline">debian-tor</code></span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-danger)"></i><span>Tor configured with <code class="inline">AvoidDiskWrites 1</code> — minimizes state written to persistent storage</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-danger)"></i><span><code class="inline">SafeLogging 1</code> in torrc — IPs replaced with safe placeholders at Tor level</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-danger)"></i><span><code class="inline">privacy_log_sanitizer.py</code> runs via Privacy Monitor — scrubs any remaining IPs or hostnames from RAM logs</span></li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warn">
+                    <i class="fa-solid fa-rotate"></i>
+                    <div><strong>Reboot caveat:</strong> The tmpfs mount is not written to <code class="inline">/etc/fstab</code>. After a reboot, <code class="inline">/var/log/tor</code> reverts to disk-backed storage. For persistent RAM-only logging, add an fstab entry or create a systemd <code class="inline">.mount</code> unit manually.</div>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — persistent tmpfs via fstab (optional)</span></div>
+                    <pre><span style="color:rgba(255,255,255,.3)"># Add to /etc/fstab for persistence across reboots:</span>
+tmpfs /var/log/tor tmpfs size=10M,mode=0700,uid=debian-tor,gid=debian-tor 0 0</pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — verify RAM logging is active</span></div>
+                    <pre>sudo mount | grep tmpfs | grep tor    <span style="color:rgba(255,255,255,.3)"># Should show the tmpfs mount</span>
+sudo df -h /var/log/tor              <span style="color:rgba(255,255,255,.3)"># Should show tmpfs filesystem</span></pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── ANTI-TRACKING ── -->
+            <section class="doc-section" id="anti-tracking">
+                <div class="section-badge" style="background:rgba(0,220,130,.08);border-color:rgba(0,220,130,.25);color:var(--brand-success);">
+                    <i class="fa-solid fa-user-secret"></i> Anti-Tracking
+                </div>
+                <h2 class="section-h2">Traffic Analysis & Tracking Protection</h2>
+                <p class="section-lead">Multiple independent layers defeat every known traffic correlation and fingerprinting technique. Even an observer watching both ends of the Tor circuit cannot correlate requests to your server.</p>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-expand" style="color:var(--brand-success);margin-right:8px;"></i>Response Size Padding</h3>
+                    <p>A Lua script at the nginx <code class="inline">body_filter_by_lua_file</code> phase pads all HTTP responses to random block sizes using null bytes. An observer monitoring response sizes cannot distinguish page content from padding — all responses look similar.</p>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-clock" style="color:var(--brand-success);margin-right:8px;"></i>Timing Randomization</h3>
+                    <p>10–50ms random delay is injected per response. Timing-correlation attacks that rely on consistent server latency — even inside encrypted Tor circuits — are defeated at the application layer before the response is sent.</p>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-tag" style="color:var(--brand-success);margin-right:8px;"></i>Header Scrubbing</h3>
+                    <p>The following headers are removed entirely: <code class="inline">Server</code>, <code class="inline">X-Powered-By</code>, <code class="inline">ETag</code>, <code class="inline">Last-Modified</code>, <code class="inline">X-Request-ID</code>, <code class="inline">X-Forwarded-For</code>, <code class="inline">Via</code>. <code class="inline">server_tokens off</code> provides a second layer of version concealment. Fingerprinting the nginx version or platform from response headers is impossible.</p>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-ban" style="color:var(--brand-success);margin-right:8px;"></i>Cache Prevention</h3>
+                    <p><code class="inline">Cache-Control: no-store, no-cache</code> and <code class="inline">Clear-Site-Data</code> headers prevent browser-side caching that could be used for tracking across sessions.</p>
+                </div>
+
+                <h3 style="color:#fff;font-size:1rem;font-weight:700;margin:24px 0 14px;">Protection Matrix</h3>
+                <div>
+                    <div class="matrix-row" style="font-size:.75rem;color:rgba(255,255,255,.35);font-weight:600;margin-bottom:8px;">
+                        <span>Attack Vector</span><span>Protection</span><span>Status</span>
+                    </div>
+                    <div class="matrix-row"><span>Response size correlation</span><span style="color:rgba(255,255,255,.55)">Lua response padding</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>Timing correlation</span><span style="color:rgba(255,255,255,.55)">10–50ms jitter</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>DNS leaks</span><span style="color:rgba(255,255,255,.55)">DNS blocked via firewall</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>Server fingerprinting</span><span style="color:rgba(255,255,255,.55)">Header removal</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>ETag tracking</span><span style="color:rgba(255,255,255,.55)">ETag removed</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>Cache-based tracking</span><span style="color:rgba(255,255,255,.55)">Cache-Control headers</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>Log analysis</span><span style="color:rgba(255,255,255,.55)">RAM logs + sanitizer</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>Memory dumps</span><span style="color:rgba(255,255,255,.55)">Core dumps disabled</span><span class="pill pill-green">✓ Blocked</span></div>
+                    <div class="matrix-row"><span>Client-side JS fingerprinting</span><span style="color:rgba(255,255,255,.55)">N/A — client-side</span><span class="pill pill-red">Out of scope</span></div>
+                    <div class="matrix-row"><span>Tor guard node compromise</span><span style="color:rgba(255,255,255,.55)">N/A — Tor network level</span><span class="pill pill-red">Out of scope</span></div>
+                </div>
+
+                <div class="code-block" style="margin-top:20px;">
+                    <div class="code-header"><span>bash — test response padding</span></div>
+                    <pre><span style="color:rgba(255,255,255,.3)"># Response sizes should vary (random padding)</span>
+for i in {1..5}; do
+    curl -s -o /dev/null -w "%{size_download}\n" http://127.0.0.1/
+done
+
+<span style="color:rgba(255,255,255,.3)"># No identifying headers should appear:</span>
+curl -I http://127.0.0.1/ | grep -i "server\|etag\|last-modified\|x-powered"</pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── PRIVACY MONITOR ── -->
+            <section class="doc-section" id="privacy-monitor">
+                <div class="section-badge" style="background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.25);color:var(--brand-green);">
+                    <i class="fa-solid fa-eye"></i> Privacy Monitor
+                </div>
+                <h2 class="section-h2">Automated Privacy Compliance Monitor</h2>
+                <p class="section-lead">A systemd timer that continuously verifies your privacy posture — not just at install time, but throughout the life of the service.</p>
+
+                <table class="doc-table">
+                    <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+                    <tbody>
+                        <tr><td>Timer unit</td><td><code class="inline">privacy-monitor.timer</code></td></tr>
+                        <tr><td>Service unit</td><td><code class="inline">privacy-monitor.service</code> (Type=oneshot)</td></tr>
+                        <tr><td>Interval</td><td>Every 10 minutes</td></tr>
+                        <tr><td>Boot delay</td><td>2 minutes after boot</td></tr>
+                        <tr><td>Script</td><td><code class="inline">/usr/local/bin/privacy_monitor.sh</code></td></tr>
+                    </tbody>
+                </table>
+
+                <div class="doc-card">
+                    <h3>What it checks</h3>
+                    <ul>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>tmpfs RAM disk is still mounted at <code class="inline">/var/log/tor</code></span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>nginx is not leaking <code class="inline">Server</code> or version identifiers in responses</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>Disk-backed log files that should not exist are flagged and removed</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-green)"></i><span>Runs <code class="inline">privacy_log_sanitizer.py</code> to scrub IPs and hostnames from RAM log entries</span></li>
+                    </ul>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — manage privacy monitor</span></div>
+                    <pre>sudo systemctl status privacy-monitor.timer
+sudo systemctl list-timers | grep privacy       <span style="color:rgba(255,255,255,.3)"># See next run time</span>
+sudo /usr/local/bin/privacy_monitor.sh          <span style="color:rgba(255,255,255,.3)"># Run manually</span>
+sudo journalctl -u privacy-monitor.service      <span style="color:rgba(255,255,255,.3)"># View last run output</span></pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── MAINTENANCE ── -->
+            <section class="doc-section" id="maintenance">
+                <div class="section-badge" style="background:rgba(255,184,0,.08);border-color:rgba(255,184,0,.25);color:var(--brand-warning);">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Maintenance
+                </div>
+                <h2 class="section-h2">Maintenance Commands</h2>
+                <p class="section-lead">Day-to-day commands for operating a live Aegis deployment.</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — edit website</span></div>
+                    <pre>sudo aegis-edit          <span style="color:rgba(255,255,255,.3)"># Opens nano, fixes ownership, reloads nginx on save</span></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — monitor system (live HUD)</span></div>
+                    <pre>sudo ./aegis_monitor.sh  <span style="color:rgba(255,255,255,.3)"># Real-time threat and health dashboard</span></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — view logs</span></div>
+                    <pre>sudo journalctl -u tor@default -f       <span style="color:rgba(255,255,255,.3)"># Live Tor log</span>
+sudo tail -f /var/log/tor/notices.log  <span style="color:rgba(255,255,255,.3)"># Tor notices (RAM)</span>
+sudo tail -f /var/log/tor/sentry.log   <span style="color:rgba(255,255,255,.3)"># Neural Sentry events</span>
+sudo journalctl -u nginx -f            <span style="color:rgba(255,255,255,.3)"># nginx</span></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — update nginx config</span></div>
+                    <pre>sudo nano /etc/nginx/sites-available/onion_site
+sudo nginx -t                        <span style="color:rgba(255,255,255,.3)"># Always validate first</span>
+sudo systemctl reload nginx</pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — update tor config</span></div>
+                    <pre>sudo nano /etc/tor/torrc
+sudo systemctl restart tor@default</pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — full backup</span></div>
+                    <pre>sudo tar -czf aegis-backup-$(date +%Y%m%d).tar.gz \
+    /var/lib/tor/hidden_service/ \
+    /etc/tor/torrc \
+    /etc/nginx/sites-available/onion_site \
+    /var/www/onion_site</pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash — uninstall</span></div>
+                    <pre>sudo ./uninstall.sh</pre>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── TROUBLESHOOTING ── -->
+            <section class="doc-section" id="troubleshooting">
+                <div class="section-badge" style="background:rgba(255,78,78,.08);border-color:rgba(255,78,78,.25);color:var(--brand-danger);">
+                    <i class="fa-solid fa-bug"></i> Troubleshooting
+                </div>
+                <h2 class="section-h2">Common Issues & Fixes</h2>
+                <p class="section-lead">Solutions to every known installation and runtime issue.</p>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand-danger);margin-right:8px;"></i>nginx fails — unicode.mapping not found</h3>
+                    <p style="margin-bottom:10px;">Error: <code class="inline">Failed to locate the unicode map file from: unicode.mapping</code></p>
+                    <div class="code-block">
+                        <div class="code-header"><span>fix</span></div>
+                        <pre>sudo wget https://raw.githubusercontent.com/SpiderLabs/ModSecurity/v3/master/unicode.mapping \
+    -O /etc/nginx/modsec/unicode.mapping
+sudo sed -i "s|SecUnicodeMapFile unicode.mapping|SecUnicodeMapFile /etc/nginx/modsec/unicode.mapping|g" \
+    /etc/nginx/modsec/modsecurity.conf
+sudo nginx -t && sudo systemctl restart nginx</pre>
+                    </div>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand-warning);margin-right:8px;"></i>Tor shows "active (exited)" on Debian 13</h3>
+                    <p style="margin-bottom:10px;">On Debian 13, <code class="inline">tor.service</code> is a dummy master unit (<code class="inline">ExecStart=/bin/true</code>). The real process is <code class="inline">tor@default.service</code>.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span>fix</span></div>
+                        <pre>sudo systemctl status tor@default    <span style="color:rgba(255,255,255,.3)"># Check the real unit</span>
+sudo systemctl restart tor@default
+sudo cat /var/lib/tor/hidden_service/hostname</pre>
+                    </div>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand-danger);margin-right:8px;"></i>"Onion Site Not Found" in Tor Browser</h3>
+                    <p style="margin-bottom:10px;">Brand-new v3 addresses take 2–5 minutes to propagate to HSDir nodes. This is normal.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span>check</span></div>
+                        <pre>sudo systemctl status tor@default nginx
+sudo cat /var/lib/tor/hidden_service/hostname   <span style="color:rgba(255,255,255,.3)"># Verify address</span>
+curl -v http://127.0.0.1/                       <span style="color:rgba(255,255,255,.3)"># nginx responding locally?</span></pre>
+                    </div>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand-danger);margin-right:8px;"></i>SSH lockout after install</h3>
+                    <p style="margin-bottom:10px;">You answered No to SSH access on a VPS. Use your provider's web console (VNC/KVM), then:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span>emergency fix</span></div>
+                        <pre>sudo nft flush ruleset               <span style="color:rgba(255,255,255,.3)"># Remove all firewall rules</span>
+sudo ./install.sh                    <span style="color:rgba(255,255,255,.3)"># Re-run, answer Y to SSH</span></pre>
+                    </div>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand-warning);margin-right:8px;"></i>nginx fails — Lua "undefined symbol: ndk_set_var_value"</h3>
+                    <p style="margin-bottom:10px;">Module load order issue. NDK must load before Lua.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span>fix</span></div>
+                        <pre>sudo ln -sf /usr/share/nginx/modules-available/mod-http-ndk.conf \
+    /etc/nginx/modules-enabled/10-ndk.conf
+sudo ln -sf /usr/share/nginx/modules-available/mod-http-lua.conf \
+    /etc/nginx/modules-enabled/20-lua.conf
+sudo systemctl restart nginx</pre>
+                    </div>
+                </div>
+
+                <div class="doc-card">
+                    <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--brand-warning);margin-right:8px;"></i>Hidden service not created after 60 seconds</h3>
+                    <div class="code-block" style="margin-top:10px;">
+                        <div class="code-header"><span>fix</span></div>
+                        <pre>sudo chown -R debian-tor:debian-tor /var/lib/tor/hidden_service
+sudo chmod 700 /var/lib/tor/hidden_service
+sudo systemctl restart tor@default
+sleep 15 && sudo cat /var/lib/tor/hidden_service/hostname</pre>
+                    </div>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── FILE LOCATIONS ── -->
+            <section class="doc-section" id="file-locations">
+                <div class="section-badge" style="background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.25);color:var(--brand-green);">
+                    <i class="fa-solid fa-folder-open"></i> File Locations
+                </div>
+                <h2 class="section-h2">Important File Locations</h2>
+                <p class="section-lead">Quick reference for every file path used by the Aegis stack.</p>
+
+                <div class="file-row"><span class="file-name">/var/lib/tor/hidden_service/hostname</span><span class="file-desc">Your .onion address</span></div>
+                <div class="file-row"><span class="file-name">/var/lib/tor/hidden_service/</span><span class="file-desc">Tor keys — back these up</span></div>
+                <div class="file-row"><span class="file-name">/var/www/onion_site/</span><span class="file-desc">Web root — your site content</span></div>
+                <div class="file-row"><span class="file-name">/var/log/tor/</span><span class="file-desc">Logs — tmpfs RAM disk (wiped on reboot)</span></div>
+                <div class="file-row"><span class="file-name">/etc/tor/torrc</span><span class="file-desc">Tor configuration</span></div>
+                <div class="file-row"><span class="file-name">/etc/nginx/sites-available/onion_site</span><span class="file-desc">Nginx site config</span></div>
+                <div class="file-row"><span class="file-name">/etc/nginx/nginx.conf</span><span class="file-desc">Nginx base config</span></div>
+                <div class="file-row"><span class="file-name">/etc/nginx/modsec/modsecurity.conf</span><span class="file-desc">ModSecurity rules config</span></div>
+                <div class="file-row"><span class="file-name">/etc/nginx/modsec/unicode.mapping</span><span class="file-desc">ModSecurity unicode map (required)</span></div>
+                <div class="file-row"><span class="file-name">/etc/nginx/lua/response_padding.lua</span><span class="file-desc">Lua response padding script</span></div>
+                <div class="file-row"><span class="file-name">/etc/nftables.conf</span><span class="file-desc">NFTables firewall ruleset</span></div>
+                <div class="file-row"><span class="file-name">/usr/local/bin/neural_sentry.py</span><span class="file-desc">Neural Sentry daemon</span></div>
+                <div class="file-row"><span class="file-name">/usr/local/bin/privacy_monitor.sh</span><span class="file-desc">Privacy compliance checker</span></div>
+                <div class="file-row"><span class="file-name">/usr/local/bin/traffic_analysis_protection.sh</span><span class="file-desc">Traffic analysis countermeasures</span></div>
+                <div class="file-row"><span class="file-name">/usr/local/bin/aegis-edit</span><span class="file-desc">Built-in content editor</span></div>
+                <div class="file-row"><span class="file-name">/var/log/aegis_install.log</span><span class="file-desc">Full installer log</span></div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── CHANGELOG ── -->
+            <section class="doc-section" id="improvements">
+                <div class="section-badge" style="background:rgba(112,0,255,.08);border-color:rgba(112,0,255,.25);color:#a855f7;">
+                    <i class="fa-solid fa-code-compare"></i> Changelog
+                </div>
+                <h2 class="section-h2">Version History</h2>
+                <p class="section-lead">Every significant change across the Aegis release history.</p>
+
+                <div class="doc-card" style="border-color:rgba(0,240,255,.2);margin-bottom:16px;">
+                    <h3 style="display:flex;align-items:center;gap:10px;"><span class="v-badge">v10.0</span> Bare Metal Edition <span style="font-size:.75rem;color:rgba(255,255,255,.3);font-weight:400;">Current</span></h3>
+                    <ul style="margin-top:12px;">
+                        <li><i class="fa-solid fa-trash" style="color:var(--brand-danger)"></i><span><strong style="color:#fff;">Docker removed permanently</strong> — incompatible with sysctl hardening, NFTables, Tor Sandbox mode, and tmpfs RAM logging.</span></li>
+                        <li><i class="fa-solid fa-magnifying-glass" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">detect_tor_service()</strong> — reads <code class="inline">ExecStart</code> property to distinguish Debian 13's dummy <code class="inline">tor.service</code> from the real <code class="inline">tor@default.service</code>.</span></li>
+                        <li><i class="fa-solid fa-folder" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">INSTALL_DIR fix</strong> — changed from <code class="inline">$(pwd)</code> to <code class="inline">BASH_SOURCE</code>-based resolution. Works when called from any directory.</span></li>
+                        <li><i class="fa-solid fa-shield" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">set -E</strong> — ERR trap now fires inside functions and subshells. No silent failures.</span></li>
+                        <li><i class="fa-solid fa-clock" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Privacy monitor systemd timer</strong> — runs automatically every 10 minutes. No manual execution needed.</span></li>
+                        <li><i class="fa-solid fa-broom" style="color:var(--brand-green)"></i><span><strong style="color:#fff;">Uninstaller updated</strong> — removes all systemd units including privacy-monitor.timer, traffic-protection.service.</span></li>
+                        <li><i class="fa-solid fa-shield-virus" style="color:var(--brand-warning)"></i><span><strong style="color:#fff;">unicode.mapping auto-download</strong> — fixes nginx startup crash from missing SecUnicodeMapFile.</span></li>
+                        <li><i class="fa-solid fa-lock" style="color:var(--brand-warning)"></i><span><strong style="color:#fff;">Pre-firewall nginx validation</strong> — nginx config verified before nftables applied, preventing lockout on bad config.</span></li>
+                    </ul>
+                </div>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3 style="display:flex;align-items:center;gap:10px;"><span class="v-badge" style="background:rgba(112,0,255,.1);border-color:rgba(112,0,255,.3);color:#a855f7;">v9.0</span> Architect Edition</h3>
+                    <ul style="margin-top:12px;">
+                        <li><i class="fa-solid fa-fire" style="color:#a855f7"></i><span><strong style="color:#fff;">Balanced NFTables</strong> — replaced aggressive rate limiting with stateful <code class="inline">ct state established,related</code>. Fixed "Onion Site Not Found" at launch.</span></li>
+                        <li><i class="fa-solid fa-lock-open" style="color:#a855f7"></i><span><strong style="color:#fff;">SSH Safety Valve</strong> — interactive prompt prevents VPS lockout during installation.</span></li>
+                        <li><i class="fa-solid fa-display" style="color:#a855f7"></i><span><strong style="color:#fff;">Session HUD</strong> — aegis_monitor.sh v5.0 with live CPU/RAM for Tor and nginx, real-time threat feed.</span></li>
+                        <li><i class="fa-solid fa-bug" style="color:#a855f7"></i><span><strong style="color:#fff;">Variable initialization</strong> — fixed <code class="inline">unary operator expected</code> crashes on strict bash installs.</span></li>
+                    </ul>
+                </div>
+
+                <div class="doc-card">
+                    <h3 style="display:flex;align-items:center;gap:10px;"><span class="v-badge" style="background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.4);">v7/v8</span> Early Versions</h3>
+                    <ul style="margin-top:12px;">
+                        <li><i class="fa-solid fa-circle" style="color:rgba(255,255,255,.3)"></i><span>Dual Docker + bare metal deployment. Docker later removed due to fundamental incompatibilities.</span></li>
+                        <li><i class="fa-solid fa-circle" style="color:rgba(255,255,255,.3)"></i><span>Neural Sentry v1–v4. Basic NFTables with aggressive rate limiting that caused Tor blockages.</span></li>
+                        <li><i class="fa-solid fa-circle" style="color:rgba(255,255,255,.3)"></i><span>Manual privacy monitor — users had to remember to run it.</span></li>
+                    </ul>
+                </div>
+
+                <h3 style="color:#fff;font-size:1rem;font-weight:700;margin:28px 0 14px;">Version Comparison</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Feature</th><th>v7/v8</th><th>v9.0</th><th>v10.0</th></tr></thead>
+                    <tbody>
+                        <tr><td>Docker support</td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-red">Removed</span></td></tr>
+                        <tr><td>Tor service auto-detect</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>BASH_SOURCE INSTALL_DIR</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>set -E error propagation</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>Privacy monitor auto-run</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓ timer</span></td></tr>
+                        <tr><td>unicode.mapping auto-deploy</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>Pre-firewall nginx check</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>SSH Safety Valve</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>Balanced NFTables</td><td><span class="pill pill-red">✗</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>Amnesic RAM logging</td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                        <tr><td>Neural Sentry</td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td><td><span class="pill pill-green">✓</span></td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── THREAT MODEL ── -->
+            <section class="doc-section" id="threat-model">
+                <div class="section-badge" style="background:rgba(255,78,78,.08);border-color:rgba(255,78,78,.25);color:var(--brand-danger);">
+                    <i class="fa-solid fa-crosshairs"></i> Threat Model
+                </div>
+                <h2 class="section-h2">What Aegis Protects Against</h2>
+                <p class="section-lead">Aegis is designed around a specific, realistic threat model. Understanding it helps you know exactly what is and is not protected.</p>
+
+                <div class="doc-card" style="margin-bottom:16px;">
+                    <h3 style="color:var(--brand-success)"><i class="fa-solid fa-shield-halved" style="margin-right:8px;"></i>Protected — Server Side</h3>
+                    <ul>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Traffic analysis via response size correlation</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Timing correlation attacks</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>DNS leakage outside Tor</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Server fingerprinting via response headers</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Application-layer attacks (SQLi, XSS) via ModSecurity WAF</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>DDoS / circuit flooding via Neural Sentry NEWNYM</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Forensic log analysis — RAM-only logging, IP sanitization</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Memory dumps — core dumps disabled</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Port scanning — default DROP policy</span></li>
+                        <li><i class="fa-solid fa-check" style="color:var(--brand-success)"></i><span>Cache-based tracking via cache-control headers</span></li>
+                    </ul>
+                </div>
+
+                <div class="doc-card">
+                    <h3 style="color:var(--brand-danger)"><i class="fa-solid fa-triangle-exclamation" style="margin-right:8px;"></i>Out of Scope — Client Side &amp; Physical</h3>
+                    <ul>
+                        <li><i class="fa-solid fa-xmark" style="color:var(--brand-danger)"></i><span><strong style="color:#fff;">Browser fingerprinting</strong> — JavaScript and client-side tracking are outside server control</span></li>
+                        <li><i class="fa-solid fa-xmark" style="color:var(--brand-danger)"></i><span><strong style="color:#fff;">User behaviour</strong> — typing patterns, mouse movements, session habits</span></li>
+                        <li><i class="fa-solid fa-xmark" style="color:var(--brand-danger)"></i><span><strong style="color:#fff;">Tor guard node compromise</strong> — a global adversary who controls the first hop</span></li>
+                        <li><i class="fa-solid fa-xmark" style="color:var(--brand-danger)"></i><span><strong style="color:#fff;">Physical seizure</strong> — hardware attacks, cold boot (mitigated but not eliminated by RAM logs)</span></li>
+                        <li><i class="fa-solid fa-xmark" style="color:var(--brand-danger)"></i><span><strong style="color:#fff;">OPSEC failures</strong> — publishing your address publicly, reusing identities, poor key management</span></li>
+                    </ul>
+                </div>
+            </section>
+
+            <div class="doc-divider"></div>
+
+            <!-- ── VERIFICATION ── -->
+            <section class="doc-section" id="verification">
+                <div class="section-badge" style="background:rgba(0,220,130,.08);border-color:rgba(0,220,130,.25);color:var(--brand-success);">
+                    <i class="fa-solid fa-circle-check"></i> Verification
+                </div>
+                <h2 class="section-h2">Verification Report — v10.0</h2>
+                <p class="section-lead">Live deployment verified on Debian 13 Trixie. All components confirmed operational.</p>
+
+                <div class="alert alert-success">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <div><strong>Status: STABLE — VERIFIED ON LIVE DEBIAN 13 TRIXIE DEPLOYMENT</strong><br>nginx active · tor@default active · ModSecurity WAF blocking · Onion address generated · Privacy Monitor running</div>
+                </div>
+
+                <table class="doc-table">
+                    <thead><tr><th>Component</th><th>Status</th><th>Notes</th></tr></thead>
+                    <tbody>
+                        <tr><td>install.sh</td><td><span class="pill pill-green">✓ Valid</span></td><td>bash -n syntax clean, all 6 bugs fixed</td></tr>
+                        <tr><td>nginx + ModSecurity WAF</td><td><span class="pill pill-green">✓ Verified</span></td><td>Blocking mode, unicode.mapping resolved</td></tr>
+                        <tr><td>tor@default.service</td><td><span class="pill pill-green">✓ Verified</span></td><td>Auto-detected on Debian 13</td></tr>
+                        <tr><td>Onion address generation</td><td><span class="pill pill-green">✓ Verified</span></td><td>V3 address generated within 60s</td></tr>
+                        <tr><td>tmpfs RAM logging</td><td><span class="pill pill-green">✓ Verified</span></td><td>/var/log/tor mounted as tmpfs</td></tr>
+                        <tr><td>NFTables firewall</td><td><span class="pill pill-green">✓ Verified</span></td><td>Balanced ruleset, Tor unrestricted</td></tr>
+                        <tr><td>neural-sentry.service</td><td><span class="pill pill-green">✓ Valid</span></td><td>Deploys if neural_sentry.py present</td></tr>
+                        <tr><td>privacy-monitor.timer</td><td><span class="pill pill-green">✓ Valid</span></td><td>10-minute interval, 2min boot delay</td></tr>
+                        <tr><td>traffic-protection.service</td><td><span class="pill pill-green">✓ Valid</span></td><td>RemainAfterExit, starts after nftables</td></tr>
+                        <tr><td>uninstall.sh</td><td><span class="pill pill-green">✓ Valid</span></td><td>Removes all systemd units</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Footer -->
+            <div style="margin-top:60px;padding-top:32px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i class="fa-solid fa-shield-halved" style="color:var(--brand-green);font-size:1.2rem;"></i>
+                    <div>
+                        <div style="color:#fff;font-weight:700;font-size:.9rem;">OnionSite-Aegis</div>
+                        <div style="color:rgba(255,255,255,.3);font-size:.75rem;">Created by <a href="https://github.com/ashardian" style="color:var(--brand-green);text-decoration:none;" target="_blank" rel="noopener noreferrer">ashardian</a></div>
+                    </div>
+                </div>
+                <div style="color:rgba(255,255,255,.25);font-size:.75rem;text-align:right;">
+                    Released under Custom License. Attribution Required.<br>v10.0 Bare Metal Edition · Debian 13 Trixie Verified
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Mobile sidebar toggle -->
+    <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <i class="fa-solid fa-bars" id="sidebar-icon"></i>
+    </button>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // ── Sidebar toggle (mobile) ──
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            const icon = document.getElementById('sidebar-icon');
+            const open = sb.classList.toggle('open');
+            icon.className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+        }
+
+        // Close sidebar on link click (mobile)
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 900) {
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('sidebar-icon').className = 'fa-solid fa-bars';
+                }
+            });
+        });
+
+        // ── Active sidebar link on scroll ──
+        const sections = document.querySelectorAll('.doc-section[id]');
+        const sideLinks = document.querySelectorAll('.sidebar-link');
+
+        function onScroll() {
+            let current = '';
+            sections.forEach(sec => {
+                if (window.scrollY >= sec.offsetTop - 120) current = sec.id;
+            });
+            sideLinks.forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+            });
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+
+        // ── Copy code ──
+        function copyCode(btn, text) {
+            const content = text || btn.closest('.code-block').querySelector('pre').textContent;
+            navigator.clipboard.writeText(content.trim()).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                btn.style.color = 'var(--brand-success)';
+                setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = content.trim();
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            });
+        }
+
+        // Auto-attach copy buttons to code blocks without explicit handlers
+        document.querySelectorAll('.code-block').forEach(block => {
+            const existing = block.querySelector('.code-copy-btn');
+            if (!existing) {
+                const hdr = block.querySelector('.code-header');
+                if (hdr) {
+                    const btn = document.createElement('button');
+                    btn.className = 'code-copy-btn';
+                    btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                    btn.onclick = function() { copyCode(this); };
+                    hdr.appendChild(btn);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
