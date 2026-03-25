@@ -196,15 +196,9 @@ All documentation is in the [`docs/`](docs/) directory:
 
 ---
 
-## 🤝 Contributing
-
-Privacy-focused contributions are welcome. See [ATTRIBUTION.md](ATTRIBUTION.md) for credit guidelines.
-
 ## 📄 License
 
 **MIT License — See [LICENSE](LICENSE) for full terms.**
-
-Attribution is required when using, redistributing, or showcasing OnionSite-Aegis. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ---
 
